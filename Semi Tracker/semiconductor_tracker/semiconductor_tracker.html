@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Semiconductor Universe — Performance Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0d12;
+  --bg-2:      #11151c;
+  --bg-3:      #161b24;
+  --panel:     #0f1319;
+  --line:      #1f2630;
+  --line-2:    #2a3340;
+  --text:      #e8ecf2;
+  --text-2:    #98a2b3;
+  --text-3:    #667085;
+  --accent:    #f5e6c8;
+  --accent-2:  #d4af6a;
+  --up:        #4ade80;
+  --up-bg:     rgba(74,222,128,0.10);
+  --down:      #f87171;
+  --down-bg:   rgba(248,113,113,0.10);
+  --neutral:   #64748b;
+}
+*  { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Manrope', sans-serif; -webkit-font-smoothing:antialiased; }
+body { min-height:100vh; }
+
+/* ---------- Header ---------- */
+.head {
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #0d1117 0%, #0a0d12 100%);
+  padding: 28px 32px 22px;
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(12px);
+}
+.head-row { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; }
+.brand h1 {
+  font-family:'Fraunces', serif; font-weight:400; font-style:italic;
+  font-size: clamp(28px, 4vw, 44px); line-height:1; margin:0; letter-spacing:-0.02em;
+  color: var(--accent);
+}
+.brand .sub { font-size:12px; color:var(--text-3); letter-spacing:0.18em; text-transform:uppercase; margin-top:10px; font-weight:500; }
+.meta { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-3); text-align:right; line-height:1.6; }
+.meta b { color:var(--text-2); font-weight:500; }
+.meta .stat { color:var(--text); font-weight:600; }
+
+/* ---------- Top movers strip ---------- */
+.movers {
+  display:grid; grid-template-columns: repeat(4, 1fr);
+  gap:1px; background:var(--line); border-bottom:1px solid var(--line);
+}
+.mover { background:var(--bg); padding:14px 20px; }
+.mover .lbl { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:0.15em; font-weight:600; margin-bottom:6px; }
+.mover .val { display:flex; align-items:baseline; gap:8px; font-family:'JetBrains Mono', monospace; }
+.mover .tkr { font-size:14px; font-weight:700; color:var(--text); }
+.mover .pct { font-size:14px; font-weight:600; }
+.mover .nm { font-size:11px; color:var(--text-3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ---------- Controls ---------- */
+.controls {
+  display:flex; gap:12px; padding:18px 32px; background:var(--bg-2);
+  border-bottom:1px solid var(--line); align-items:center; flex-wrap:wrap;
+}
+.controls input, .controls select {
+  background:var(--bg-3); border:1px solid var(--line-2); color:var(--text);
+  font-family:'Manrope',sans-serif; font-size:13px; padding:8px 12px; border-radius:6px;
+  outline:none; transition: border-color .15s;
+}
+.controls input { width: 280px; }
+.controls input:focus, .controls select:focus { border-color: var(--accent-2); }
+.controls input::placeholder { color: var(--text-3); }
+.controls select { cursor:pointer; }
+.controls label { font-size:11px; color:var(--text-3); letter-spacing:0.1em; text-transform:uppercase; font-weight:600; margin-right:-4px; }
+.spacer { flex:1; }
+.count { font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-2); }
+
+/* ---------- Table ---------- */
+.table-wrap { padding: 0 32px 64px; }
+.cat-block { margin-top: 36px; scroll-margin-top: 140px; }
+.cat-block:first-child { margin-top: 24px; }
+.cat-block.highlight .cat-title { color: var(--accent); }
+.cat-block.highlight .cat-title::before { background: var(--accent); width: 6px; }
+.cat-title {
+  display:flex; align-items:baseline; gap:14px;
+  font-family:'Fraunces', serif; font-style:italic; font-weight:400;
+  font-size: 22px; color: var(--text); margin: 0 0 12px 0; letter-spacing:-0.01em;
+}
+.cat-title .cat-count {
+  font-family:'JetBrains Mono', monospace; font-style:normal; font-size:11px;
+  color:var(--text-3); font-weight:500; letter-spacing:0.1em;
+}
+.cat-title::before {
+  content:''; display:inline-block; width:3px; height:18px; background:var(--accent-2); border-radius:2px;
+}
+
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead { position:sticky; top:0; }
+thead th {
+  background: var(--bg-2);
+  color: var(--text-3); font-weight:600;
+  text-transform:uppercase; font-size:10px; letter-spacing:0.12em;
+  text-align:right; padding:10px 12px; border-bottom: 1px solid var(--line-2);
+  cursor:pointer; user-select:none; white-space:nowrap;
+}
+thead th.left { text-align:left; }
+thead th:hover { color: var(--accent); }
+thead th .arrow { display:inline-block; width:10px; opacity:.6; }
+tbody td {
+  padding: 8px 12px; border-bottom: 1px solid var(--line);
+  font-family:'JetBrains Mono', monospace; text-align:right; white-space:nowrap;
+}
+tbody td.left { text-align:left; font-family:'Manrope', sans-serif; }
+tbody tr:hover td { background: var(--bg-2); }
+.tkr { font-weight:700; color: var(--text); font-family:'JetBrains Mono', monospace; }
+.nm  { color: var(--text-2); }
+.ctry { font-size:10px; color: var(--text-3); padding: 2px 6px; border:1px solid var(--line-2); border-radius:3px; }
+.px { color: var(--text); font-weight:500; }
+.cur { font-size:10px; color:var(--text-3); margin-left:4px; }
+.ret { font-weight:600; padding: 4px 8px; border-radius:4px; min-width:64px; display:inline-block; text-align:right; }
+.ret.na { color: var(--text-3); font-weight:400; background: transparent; }
+
+/* ---------- Sector heatmap ---------- */
+.heatmap-wrap { padding: 32px 32px 0; }
+.heatmap-head {
+  display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  margin-bottom: 14px;
+}
+.heatmap-title {
+  font-family:'Fraunces', serif; font-style:italic; font-weight:400;
+  font-size: 26px; color: var(--text); margin:0; letter-spacing:-0.01em;
+  display:flex; align-items:baseline; gap:14px;
+}
+.heatmap-title::before {
+  content:''; display:inline-block; width:3px; height:22px; background:var(--accent); border-radius:2px;
+  align-self:center;
+}
+.heatmap-toggle {
+  display:flex; gap:0; border:1px solid var(--line-2); border-radius:6px; overflow:hidden;
+  font-family:'JetBrains Mono', monospace;
+}
+.heatmap-toggle button {
+  background:var(--bg-3); color:var(--text-2); border:none; cursor:pointer;
+  font-family:inherit; font-size:11px; padding:7px 14px; letter-spacing:0.08em; text-transform:uppercase; font-weight:600;
+  transition: all .15s;
+}
+.heatmap-toggle button + button { border-left:1px solid var(--line-2); }
+.heatmap-toggle button:hover { color: var(--text); }
+.heatmap-toggle button.active { background: var(--accent-2); color: var(--bg); }
+
+.heatmap {
+  width:100%; border-collapse:separate; border-spacing:0;
+  background: var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden;
+}
+.heatmap th, .heatmap td {
+  padding: 10px 14px; font-size: 12px; text-align: right; border-bottom: 1px solid var(--line);
+}
+.heatmap th {
+  background: var(--bg-2); color: var(--text-3); font-weight:600;
+  text-transform:uppercase; font-size:10px; letter-spacing:0.12em;
+  cursor:pointer; user-select:none;
+}
+.heatmap th:hover { color: var(--accent); }
+.heatmap th.left, .heatmap td.left { text-align:left; }
+.heatmap tbody tr {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.heatmap tbody tr:hover td { background: var(--bg-2); }
+.heatmap tbody tr:hover td.left { background: var(--bg-3); }
+.heatmap tbody tr:hover .cat-name { color: var(--accent); }
+.heatmap tbody tr:last-child td { border-bottom: none; }
+.heatmap .cat-name {
+  font-family:'Manrope', sans-serif; font-weight:500; color: var(--text); font-size:13px;
+}
+.heatmap .cat-n { font-family:'JetBrains Mono', monospace; font-size:10px; color: var(--text-3); margin-left: 6px; }
+.heatmap .hm-cell {
+  font-family:'JetBrains Mono', monospace; font-weight:600; font-size:12px;
+}
+
+/* ---------- Footer ---------- */
+.foot { padding: 32px; text-align:center; color: var(--text-3); font-size:12px; border-top:1px solid var(--line); margin-top:48px; }
+.foot a { color: var(--accent-2); text-decoration:none; }
+
+@media (max-width: 900px) {
+  .head { padding: 20px 16px 16px; }
+  .table-wrap { padding: 0 12px 32px; }
+  .movers { grid-template-columns: repeat(2,1fr); }
+  .controls { padding: 14px 16px; }
+  .controls input { width: 100%; flex: 1 1 200px; }
+  thead th, tbody td { padding: 8px 6px; font-size:11px; }
+  .nm { display:none; }
+}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="head-row">
+    <div class="brand">
+      <h1>Semiconductor Universe</h1>
+      <div class="sub">Multi-Timeframe Performance Tracker</div>
+    </div>
+    <div class="meta">
+      <div>As of <b>2026-05-12</b></div>
+      <div>Universe: <span class="stat">187 tickers</span> · <span class="stat">43 categories</span></div>
+      <div>Generated <b>2026-05-12 07:38 UTC</b></div>
+    </div>
+  </div>
+</header>
+
+<div class="movers" id="movers"></div>
+
+<div class="heatmap-wrap">
+  <div class="heatmap-head">
+    <h2 class="heatmap-title">Sector Heatmap <span style="font-style:normal; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-3); font-weight:500; letter-spacing:0.1em;">PERFORMANCE BY CATEGORY</span></h2>
+    <div class="heatmap-toggle">
+      <button data-agg="median" class="active">Median</button>
+      <button data-agg="mean">Mean</button>
+    </div>
+  </div>
+  <table class="heatmap" id="heatmap"></table>
+</div>
+
+<div class="controls">
+  <input id="search" placeholder="Search ticker or name…" autocomplete="off">
+  <label>Category</label>
+  <select id="catFilter"><option value="">All categories</option></select>
+  <label>Region</label>
+  <select id="regionFilter">
+    <option value="">All</option>
+    <option value="US">US</option>
+    <option value="TW">Taiwan</option>
+    <option value="JP">Japan</option>
+    <option value="KR">Korea</option>
+    <option value="CN">China</option>
+    <option value="DE">Germany</option>
+    <option value="NL">Netherlands</option>
+    <option value="FR">France</option>
+    <option value="GB">UK</option>
+    <option value="IL">Israel</option>
+    <option value="CH">Switzerland</option>
+    <option value="AT">Austria</option>
+    <option value="CA">Canada</option>
+    <option value="HK">Hong Kong</option>
+  </select>
+  <div class="spacer"></div>
+  <span class="count" id="count"></span>
+</div>
+
+<div class="table-wrap" id="tableWrap"></div>
+
+<footer class="foot">
+  Data: Yahoo Finance via yfinance · Returns calculated from adjusted close (splits/dividends adjusted) · Re-run <code>python3 fetch_data.py &amp;&amp; python3 build_dashboard.py</code> for refresh
+</footer>
+
+<script>
+const DATA = {"generated_at": "2026-05-12T07:38:59.428817Z", "rows": [{"ticker": "ASML", "name": "ASML Holding", "country": "NL", "category": "Lithography Equipment", "price": 1565.81005859375, "currency": "USD", "d1": -1.6463336274638807, "d7": 12.956197309012673, "d14": 9.310695222346865, "m1": 6.152423637275306, "m3": 9.9203151334748, "ytd": 46.86967864146947, "y1": 123.45766911735629, "y2": 71.23079077420526, "as_of": "2026-05-11"}, {"ticker": "7751.T", "name": "Canon", "country": "JP", "category": "Lithography Equipment", "price": 4111.0, "currency": "JPY", "d1": 0.4643206256109478, "d7": 2.3400547672392413, "d14": -0.33939393939393936, "m1": -5.926773455377576, "m3": -16.595658348549403, "ytd": -11.26699762572847, "y1": -8.991699964274769, "y2": 0.41803835595395356, "as_of": "2026-05-12"}, {"ticker": "7731.T", "name": "Nikon", "country": "JP", "category": "Lithography Equipment", "price": 2159.5, "currency": "JPY", "d1": 9.702819405638818, "d7": 19.972222222222214, "d14": 26.61975960128995, "m1": 12.62059973924381, "m3": 11.88103007362258, "ytd": 24.77557763271061, "y1": 54.842499922318886, "y2": 34.62307173901, "as_of": "2026-05-12"}, {"ticker": "SMHN.DE", "name": "SUSS MicroTec", "country": "DE", "category": "Lithography Equipment", "price": 87.05000305175781, "currency": "EUR", "d1": -0.11474294018388731, "d7": 9.153608842329541, "d14": 28.014710370232088, "m1": 42.82198845301479, "m3": 80.97714306288952, "ytd": 122.40675628313981, "y1": 130.14281587958317, "y2": 75.68667098935656, "as_of": "2026-05-12"}, {"ticker": "6920.T", "name": "Lasertec (EUV mask inspection)", "country": "JP", "category": "Lithography Equipment", "price": 43490.0, "currency": "JPY", "d1": -1.4055769666742268, "d7": 1.304449103191252, "d14": -1.8948793142341547, "m1": 4.593554593554594, "m3": 40.69880297638304, "ytd": 46.70264800134929, "y1": 198.98181554520468, "y2": 9.211203157180625, "as_of": "2026-05-12"}, {"ticker": "AMAT", "name": "Applied Materials (depo/etch/CMP/implant)", "country": "US", "category": "WFE \u2014 Diversified Majors (multi-process)", "price": 443.6199951171875, "currency": "USD", "d1": 1.8785579252980966, "d7": 13.347639016463496, "d14": 9.573682549034213, "m1": 11.046585887401594, "m3": 34.365873666940104, "ytd": 72.83678766179513, "y1": 187.6348423741063, "y2": 115.20892929910538, "as_of": "2026-05-11"}, {"ticker": "LRCX", "name": "Lam Research (etch + depo)", "country": "US", "category": "WFE \u2014 Diversified Majors (multi-process)", "price": 296.04998779296875, "currency": "USD", "d1": 0.6801564642159308, "d7": 14.495099743627327, "d14": 14.097963695290927, "m1": 12.284754487210137, "m3": 29.27629209614826, "ytd": 73.15381747852996, "y1": 295.72605389558095, "y2": 229.37120555257766, "as_of": "2026-05-11"}, {"ticker": "KLAC", "name": "KLA Corp (process control leader)", "country": "US", "category": "WFE \u2014 Process Control / Metrology / Inspection", "price": 1845.18994140625, "currency": "USD", "d1": -1.283978662005003, "d7": 7.69675246020507, "d14": -2.8847399259868456, "m1": 6.2114288018984, "m3": 28.290433907765266, "ytd": 52.0548096784454, "y1": 165.1426081642433, "y2": 161.15203880499388, "as_of": "2026-05-11"}, {"ticker": "8035.T", "name": "Tokyo Electron (track/etch/clean/depo)", "country": "JP", "category": "WFE \u2014 Diversified Majors (multi-process)", "price": 52160.0, "currency": "JPY", "d1": 0.1536098310291889, "d7": 9.926238145416221, "d14": 15.52602436323367, "m1": 18.437783832879195, "m3": 26.862059969366037, "ytd": 53.40254715852897, "y1": 132.31375133463806, "y2": 55.797994280039134, "as_of": "2026-05-12"}, {"ticker": "ASM.AS", "name": "ASM International (ALD leader)", "country": "NL", "category": "WFE \u2014 Deposition (ALD / CVD / Thermal)", "price": 871.5999755859375, "currency": "EUR", "d1": -2.1114160279248173, "d7": 3.343603314627175, "d14": 7.339898471174577, "m1": 15.017153553195751, "m3": 26.870447683542587, "ytd": 68.39258436966931, "y1": 80.90713941407816, "y2": 41.64638311720967, "as_of": "2026-05-12"}, {"ticker": "BESI.AS", "name": "BE Semiconductor (hybrid bonding)", "country": "NL", "category": "WFE \u2014 Advanced Packaging / Hybrid Bonding", "price": 258.20001220703125, "currency": "EUR", "d1": -1.1863665253569189, "d7": 1.6535481130044216, "d14": 9.732260458252618, "m1": 22.85001889062517, "m3": 53.69878957655754, "ytd": 94.26376776787073, "y1": 125.9372149313485, "y2": 99.38650111568282, "as_of": "2026-05-12"}, {"ticker": "KLIC", "name": "Kulicke & Soffa (wire/flip-chip bond)", "country": "US", "category": "WFE \u2014 Advanced Packaging / Hybrid Bonding", "price": 104.27999877929688, "currency": "USD", "d1": 1.5780197344620106, "d7": 18.702334195276894, "d14": 20.610686888180307, "m1": 34.624322246087466, "m3": 43.45344192739664, "ytd": 129.60106272182034, "y1": 233.7475126623244, "y2": 125.03679353652113, "as_of": "2026-05-11"}, {"ticker": "7735.T", "name": "Screen Holdings (cleaning + track)", "country": "JP", "category": "WFE \u2014 Wafer Cleaning", "price": 11430.0, "currency": "JPY", "d1": 0.17528483786153348, "d7": 10.009624639076042, "d14": 9.430349449497367, "m1": 6.37505816658912, "m3": 8.801821097847661, "ytd": 51.24452530527357, "y1": 120.48690028270306, "y2": 55.129799693990186, "as_of": "2026-05-12"}, {"ticker": "6525.T", "name": "Kokusai Electric (thermal/batch ALD)", "country": "JP", "category": "WFE \u2014 Deposition (ALD / CVD / Thermal)", "price": 7078.0, "currency": "JPY", "d1": 0.34023249220300755, "d7": 8.89230769230769, "d14": 8.691646191646196, "m1": 3.1928852602420177, "m3": 13.756071943510829, "ytd": 29.240974927111196, "y1": 136.93756063602578, "y2": 68.8522249026485, "as_of": "2026-05-12"}, {"ticker": "AIXA.DE", "name": "AIXTRON (MOCVD)", "country": "DE", "category": "WFE \u2014 MOCVD / Epitaxy / Compound Semi Tools", "price": 46.34000015258789, "currency": "EUR", "d1": -2.503679060112507, "d7": -9.844360356182879, "d14": 7.767442215320686, "m1": 21.404250394461897, "m3": 106.69045492816944, "ytd": 167.78387365140918, "y1": 243.63958580517306, "y2": 118.20190822777845, "as_of": "2026-05-12"}, {"ticker": "VECO", "name": "Veeco Instruments (MOCVD)", "country": "US", "category": "WFE \u2014 MOCVD / Epitaxy / Compound Semi Tools", "price": 61.209999084472656, "currency": "USD", "d1": 3.012455352889676, "d7": 20.184564535045112, "d14": 23.059905546749103, "m1": 52.872122090126325, "m3": 100.62274213465629, "ytd": 114.17074614370878, "y1": 218.63613743713492, "y2": 61.036574026356426, "as_of": "2026-05-11"}, {"ticker": "ACLS", "name": "Axcelis Technologies", "country": "US", "category": "WFE \u2014 Ion Implantation", "price": 165.0800018310547, "currency": "USD", "d1": 1.2574391627966808, "d7": 16.360053226684922, "d14": 20.09311346439877, "m1": 49.56962736522803, "m3": 93.1437925276031, "ytd": 105.47673556863018, "y1": 186.29899803661516, "y2": 45.07426004293889, "as_of": "2026-05-11"}, {"ticker": "ONTO", "name": "Onto Innovation (metrology)", "country": "US", "category": "WFE \u2014 Process Control / Metrology / Inspection", "price": 287.5199890136719, "currency": "USD", "d1": 1.001150613519397, "d7": -4.016023792199686, "d14": -3.6073520885275823, "m1": 11.814565075283978, "m3": 34.3049264548184, "ytd": 82.13606227163407, "y1": 224.88134351827333, "y2": 28.15688932096996, "as_of": "2026-05-11"}, {"ticker": "CAMT", "name": "Camtek (adv packaging metrology)", "country": "IL", "category": "WFE \u2014 Process Control / Metrology / Inspection", "price": 207.4600067138672, "currency": "USD", "d1": 0.9341313079939129, "d7": 13.546056094650428, "d14": 8.663319036010897, "m1": 18.867821099461636, "m3": 37.90215590741515, "ytd": 95.07288170234428, "y1": 211.6418922411338, "y2": 129.33894407862914, "as_of": "2026-05-11"}, {"ticker": "ACMR", "name": "ACM Research (wafer cleaning)", "country": "US", "category": "WFE \u2014 Wafer Cleaning", "price": 64.66999816894531, "currency": "USD", "d1": 8.053466696257928, "d7": 26.234625701349934, "d14": 21.49163765750497, "m1": 34.532969793025494, "m3": 3.2407388235580648, "ytd": 63.929016269369264, "y1": 191.43756923163937, "y2": 179.65404613597974, "as_of": "2026-05-11"}, {"ticker": "LPK.DE", "name": "LPKF Laser & Electronics", "country": "DE", "category": "WFE \u2014 Laser Processing & Dicing", "price": 26.100000381469727, "currency": "EUR", "d1": -6.451610256887053, "d7": 12.499997944667495, "d14": 63.636367984835914, "m1": 243.42106196028385, "m3": 227.47805606707692, "ytd": 366.9051819146504, "y1": 208.87575113140198, "y2": 226.65833703543586, "as_of": "2026-05-12"}, {"ticker": "PRCH", "name": "Park Systems (AFM metrology)", "country": "KR", "category": "WFE \u2014 Process Control / Metrology / Inspection", "price": 10.529999732971191, "currency": "USD", "d1": -4.0109436950523385, "d7": 1.6409274317338074, "d14": 30.807446999699216, "m1": 55.7692215450257, "m3": 43.07064595042487, "ytd": 15.33405915642756, "y1": 2.1338438836132623, "y2": 238.58521183798115, "as_of": "2026-05-11"}, {"ticker": "UCTT", "name": "Ultra Clean Holdings (subsystems)", "country": "US", "category": "WFE \u2014 Subsystems & Subfab Components", "price": 85.44999694824219, "currency": "USD", "d1": -1.8943760674911547, "d7": 16.87867081776966, "d14": 5.376742887228714, "m1": 12.71600013203753, "m3": 68.27490941784022, "ytd": 237.34700831274193, "y1": 326.61005501219876, "y2": 93.50089955502973, "as_of": "2026-05-11"}, {"ticker": "ICHR", "name": "Ichor Holdings (subsystems)", "country": "US", "category": "WFE \u2014 Subsystems & Subfab Components", "price": 76.94999694824219, "currency": "USD", "d1": 3.3996222004109233, "d7": 10.370045325518639, "d14": 8.87096295415164, "m1": 33.826081649116844, "m3": 125.59365456267311, "ytd": 317.52574972357417, "y1": 352.9134666561439, "y2": 102.34025616149363, "as_of": "2026-05-11"}, {"ticker": "AEIS", "name": "Advanced Energy (power conversion)", "country": "US", "category": "WFE \u2014 Subsystems & Subfab Components", "price": 354.9700012207031, "currency": "USD", "d1": -0.6354241058462162, "d7": -8.28359498222666, "d14": -7.96255757059564, "m1": -6.498264797134157, "m3": 27.190311381605035, "ytd": 69.59315833559936, "y1": 215.7013678805641, "y2": 249.58965133625358, "as_of": "2026-05-11"}, {"ticker": "MKSI", "name": "MKS Instruments (vacuum/gas/RF)", "country": "US", "category": "WFE \u2014 Subsystems & Subfab Components", "price": 319.7099914550781, "currency": "USD", "d1": 2.0752850092051522, "d7": 9.666241139429, "d14": 14.854867179020538, "m1": 18.95300983132273, "m3": 27.70094089978197, "ytd": 100.2619245490227, "y1": 302.2795666884134, "y2": 148.63875047615429, "as_of": "2026-05-11"}, {"ticker": "ENTG", "name": "Entegris (fluid/materials handling)", "country": "US", "category": "WFE \u2014 Subsystems & Subfab Components", "price": 149.14999389648438, "currency": "USD", "d1": 0.026821330540616195, "d7": 7.3330359026244185, "d14": -4.594017511132831, "m1": 10.296422876295775, "m3": 21.94879400095453, "ytd": 77.30229245890246, "y1": 96.04696770529016, "y2": 14.258451708015695, "as_of": "2026-05-11"}, {"ticker": "AZTA", "name": "Azenta / Brooks (wafer automation)", "country": "US", "category": "WFE \u2014 Subsystems & Subfab Components", "price": 17.950000762939453, "currency": "USD", "d1": -6.6076930061730765, "d7": -26.222766875351354, "d14": -28.628226500194188, "m1": -19.18054253550795, "m3": -39.765096568807735, "ytd": -46.03126377394236, "y1": -32.9473273963516, "y2": -65.21317578731731, "as_of": "2026-05-11"}, {"ticker": "002371.SZ", "name": "Naura Technology (etch+depo+thermal)", "country": "CN", "category": "WFE \u2014 Diversified China", "price": 581.4500122070312, "currency": "CNY", "d1": 1.44105963649801, "d7": 8.279488031657944, "d14": 12.420484427073063, "m1": 21.925390414323353, "m3": 22.410528885690795, "ytd": 26.655491246404583, "y1": 80.19272998650513, "y2": 164.73978030143974, "as_of": "2026-05-12"}, {"ticker": "688012.SS", "name": "AMEC (CN etch leader)", "country": "CN", "category": "WFE \u2014 Etch (Specialists)", "price": 388.45001220703125, "currency": "CNY", "d1": 1.253778900775404, "d7": 3.2288133957493415, "d14": 7.22666077436831, "m1": 19.891979076244205, "m3": 11.990436663749172, "ytd": 42.43546878421716, "y1": 112.15382703771124, "y2": 193.1280295893104, "as_of": "2026-05-12"}, {"ticker": "688135.SS", "name": "Piotech (CN deposition)", "country": "CN", "category": "WFE \u2014 Deposition (ALD / CVD / Thermal)", "price": 38.04999923706055, "currency": "CNY", "d1": -2.033987931060055, "d7": 3.144483238288176, "d14": 6.136683003006427, "m1": 28.157623956298394, "m3": 15.198306519194293, "ytd": 37.06771946447203, "y1": 108.72188805547735, "y2": 134.93101804440585, "as_of": "2026-05-12"}, {"ticker": "688037.SS", "name": "Kingsemi (CN track tools)", "country": "CN", "category": "WFE \u2014 Track (Coater / Developer)", "price": 273.739990234375, "currency": "CNY", "d1": 15.756087271654518, "d7": 17.935457117122965, "d14": 35.851111778846146, "m1": 48.40878002897888, "m3": 32.8125706776728, "ytd": 84.32428816888462, "y1": 185.67406164744304, "y2": 323.07742557926684, "as_of": "2026-05-12"}, {"ticker": "688120.SS", "name": "Hwatsing (CN cleaning)", "country": "CN", "category": "WFE \u2014 Wafer Cleaning", "price": 235.13999938964844, "currency": "CNY", "d1": 13.654599102586417, "d7": 19.100444771729496, "d14": 20.931905182683263, "m1": 28.14168904068035, "m3": 29.66087205722463, "ytd": 56.67643691419055, "y1": 120.03800441414359, "y2": 191.77928992979275, "as_of": "2026-05-12"}, {"ticker": "6383.T", "name": "Daifuku (clean-fab AMHS)", "country": "JP", "category": "WFE \u2014 Fab Automation / Wafer Handling", "price": 7744.0, "currency": "JPY", "d1": 2.1905515967273637, "d7": 14.2688505238306, "d14": 15.806789292657397, "m1": 19.211822660098534, "m3": 28.509790906073682, "ytd": 57.14285714285714, "y1": 101.99950021410298, "y2": 138.94524099745027, "as_of": "2026-05-12"}, {"ticker": "TER", "name": "Teradyne", "country": "US", "category": "Test & Inspection Equipment", "price": 366.6400146484375, "currency": "USD", "d1": 1.9095605093688128, "d7": 8.653393787270858, "d14": -8.796016256607587, "m1": -0.3668511703477817, "m3": 18.316607515223815, "ytd": 89.49851599144027, "y1": 375.3279930746632, "y2": 200.57516549502398, "as_of": "2026-05-11"}, {"ticker": "6857.T", "name": "Advantest", "country": "JP", "category": "Test & Inspection Equipment", "price": 28705.0, "currency": "JPY", "d1": -0.2605976372480945, "d7": 3.1997123854035525, "d14": -3.512605042016803, "m1": 14.865946378551431, "m3": 3.8629533893145496, "ytd": 46.39201032326954, "y1": 294.54513093688416, "y2": 465.99079997685504, "as_of": "2026-05-12"}, {"ticker": "COHU", "name": "Cohu (handlers)", "country": "US", "category": "Test & Inspection Equipment", "price": 51.279998779296875, "currency": "USD", "d1": 3.5123089051541934, "d7": 9.830799502234688, "d14": 11.019701892012268, "m1": 37.332615344788245, "m3": 61.91979367149314, "ytd": 120.36956497862082, "y1": 213.44741360736973, "y2": 74.1256280163795, "as_of": "2026-05-11"}, {"ticker": "FORM", "name": "FormFactor (probe cards)", "country": "US", "category": "Test & Inspection Equipment", "price": 151.39999389648438, "currency": "USD", "d1": 2.387231281437008, "d7": 12.673959513390297, "d14": 5.190024040041585, "m1": 22.29401467234833, "m3": 59.56998132293929, "ytd": 171.42344426274443, "y1": 408.0536838007596, "y2": 168.20193419001947, "as_of": "2026-05-11"}, {"ticker": "AEHR", "name": "Aehr Test Systems", "country": "US", "category": "Test & Inspection Equipment", "price": 104.55999755859375, "currency": "USD", "d1": 7.538819241578731, "d7": 22.13526084936255, "d14": 18.17359131056144, "m1": 48.4594591871808, "m3": 278.9778795952135, "ytd": 417.8801128916075, "y1": 1137.3964487424873, "y2": 838.5995900912728, "as_of": "2026-05-11"}, {"ticker": "INTT", "name": "inTEST", "country": "US", "category": "Test & Inspection Equipment", "price": 17.549999237060547, "currency": "USD", "d1": 1.7391260119451912, "d7": -5.339814614775262, "d14": -1.735729914316686, "m1": 11.07594319746834, "m3": 66.50853226355325, "ytd": 134.93975542146947, "y1": 187.70491002356277, "y2": 74.10713660608879, "as_of": "2026-05-11"}, {"ticker": "KEYS", "name": "Keysight Technologies", "country": "US", "category": "Test & Inspection Equipment", "price": 366.3599853515625, "currency": "USD", "d1": 1.6819311029441009, "d7": 4.272087373644329, "d14": 7.550484264060886, "m1": 13.011288058719362, "m3": 55.28334536720825, "ytd": 80.30413945056645, "y1": 137.7108726696981, "y2": 143.8985213877503, "as_of": "2026-05-11"}, {"ticker": "2449.TW", "name": "King Yuan Electronics", "country": "TW", "category": "Test & Inspection Equipment", "price": 301.0, "currency": "TWD", "d1": 0.5008347245408995, "d7": -14.971751412429379, "d14": 6.172839506172845, "m1": 8.46846846846847, "m3": -3.987240829346095, "ytd": 21.616161616161623, "y1": 233.47963743878273, "y2": 273.014560008305, "as_of": "2026-05-12"}, {"ticker": "3454.TW", "name": "Test Research Inc (TFC)", "country": "TW", "category": "Test & Inspection Equipment", "price": 99.4000015258789, "currency": "TWD", "d1": 0.0, "d7": 0.0, "d14": 0.0, "m1": 0.0, "m3": 0.302727604820463, "ytd": 0.6072858862228747, "y1": -11.271570189748005, "y2": -20.495953936978474, "as_of": "2026-05-11"}, {"ticker": "PLAB", "name": "Photronics", "country": "US", "category": "Photomasks", "price": 54.959999084472656, "currency": "USD", "d1": 2.4608495709247835, "d7": 11.075181068986417, "d14": 6.926065083483235, "m1": 22.405339012729186, "m3": 46.40382989905583, "ytd": 71.74999713897705, "y1": 182.57067829629548, "y2": 90.04149010886067, "as_of": "2026-05-11"}, {"ticker": "7911.T", "name": "Toppan Holdings", "country": "JP", "category": "Photomasks", "price": 5442.0, "currency": "JPY", "d1": 2.1396396396396344, "d7": 7.125984251968509, "d14": 18.12459301063598, "m1": 17.28448275862069, "m3": 9.909156344988347, "ytd": 17.478526458876885, "y1": 28.589649824114225, "y2": 48.22676939533628, "as_of": "2026-05-12"}, {"ticker": "7912.T", "name": "Dai Nippon Printing", "country": "JP", "category": "Photomasks", "price": 3180.0, "currency": "JPY", "d1": -2.2741241548862923, "d7": 7.414288127005575, "d14": 7.596007443748953, "m1": 5.929380413057972, "m3": 2.6346476563281263, "ytd": 18.940380418405468, "y1": 56.04847977604259, "y2": 41.27751828948654, "as_of": "2026-05-12"}, {"ticker": "7741.T", "name": "Hoya Corp (mask blanks)", "country": "JP", "category": "Photomasks", "price": 27285.0, "currency": "JPY", "d1": 0.18358729575913557, "d7": -1.9583183614804156, "d14": -6.893021668657228, "m1": -7.477110885045779, "m3": -2.378320903094455, "ytd": 15.921882973824065, "y1": 55.81146058410338, "y2": 53.965556043673125, "as_of": "2026-05-12"}, {"ticker": "5201.T", "name": "AGC Inc (mask blanks)", "country": "JP", "category": "Photomasks", "price": 6014.0, "currency": "JPY", "d1": 6.706884315117101, "d7": 7.89379260853964, "d14": 4.518595759471666, "m1": 3.209198558434867, "m3": -3.590894517473553, "ytd": 15.809743886000383, "y1": 44.58740134408703, "y2": 19.066429371725867, "as_of": "2026-05-12"}, {"ticker": "4186.T", "name": "Tokyo Ohka Kogyo (TOK)", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 11395.0, "currency": "JPY", "d1": 1.8319928507596117, "d7": 27.589295711566454, "d14": 24.277456647398843, "m1": 25.247307100461637, "m3": 38.59158355631234, "ytd": 96.33011716057891, "y1": 222.79524535634377, "y2": 172.86727440355122, "as_of": "2026-05-12"}, {"ticker": "4063.T", "name": "Shin-Etsu Chemical", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 7520.0, "currency": "JPY", "d1": -0.7129654079746528, "d7": 5.855855855855863, "d14": 6.199689309419565, "m1": 14.704087858450276, "m3": 39.20861940503233, "ytd": 55.66339908455411, "y1": 70.67496967106446, "y2": 34.96991979693376, "as_of": "2026-05-12"}, {"ticker": "4005.T", "name": "Sumitomo Chemical", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 523.4000244140625, "currency": "JPY", "d1": 2.1866481726096065, "d7": 2.047182589237573, "d14": 2.909952444541375, "m1": -1.3569452512552704, "m3": -6.775866439909395, "ytd": 19.166204846031686, "y1": 49.87775244875241, "y2": 62.68875314501623, "as_of": "2026-05-12"}, {"ticker": "4901.T", "name": "Fujifilm Holdings", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 3300.0, "currency": "JPY", "d1": 8.019639934533561, "d7": 14.762649973917586, "d14": 12.53196930946292, "m1": 5.905006418485237, "m3": 9.468762917456552, "ytd": -0.1555784805606697, "y1": 0.490430592662916, "y2": 2.5441133216841383, "as_of": "2026-05-12"}, {"ticker": "MRK.DE", "name": "Merck KGaA", "country": "DE", "category": "Photoresist & Process Chemicals", "price": 112.625, "currency": "EUR", "d1": -0.24357973619324458, "d7": 1.8769759303133737, "d14": 1.054287199580184, "m1": 2.712262091473572, "m3": -8.495690329542327, "ytd": -6.293911287622212, "y1": -8.203227653132938, "y2": -24.73713797489149, "as_of": "2026-05-12"}, {"ticker": "DD", "name": "DuPont", "country": "US", "category": "Photoresist & Process Chemicals", "price": 50.58000183105469, "currency": "USD", "d1": 1.6479170763288309, "d7": 11.385161860856542, "d14": 8.331555619537824, "m1": 7.0476229228670695, "m3": 7.819471615434326, "ytd": 26.325796226587663, "y1": 84.76994934213758, "y2": 59.61221890366637, "as_of": "2026-05-11"}, {"ticker": "AVTR", "name": "Avantor", "country": "US", "category": "Photoresist & Process Chemicals", "price": 7.96999979019165, "currency": "USD", "d1": -4.091463444724253, "d7": -0.2503126595673866, "d14": 0.0, "m1": 0.8860720756860063, "m3": -29.02938454969416, "ytd": -30.45375424378828, "y1": -33.6938478646741, "y2": -67.84994152541721, "as_of": "2026-05-11"}, {"ticker": "5384.T", "name": "Fujimi (CMP slurries)", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 3700.0, "currency": "JPY", "d1": 6.628242074927959, "d7": 13.671274961597547, "d14": 15.625, "m1": 24.45341405987218, "m3": 25.59491050227274, "ytd": 58.066307706347864, "y1": 95.92868031590449, "y2": 11.402381267063898, "as_of": "2026-05-12"}, {"ticker": "ESI", "name": "Element Solutions", "country": "US", "category": "Photoresist & Process Chemicals", "price": 45.060001373291016, "currency": "USD", "d1": 2.642368581076915, "d7": 5.2803789170947635, "d14": 11.61754413053011, "m1": 19.872309631232742, "m3": 46.11118515634591, "ytd": 80.72416292242875, "y1": 115.36745007955803, "y2": 92.96410624011877, "as_of": "2026-05-11"}, {"ticker": "4183.T", "name": "Mitsui Chemicals (EUV pellicles)", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 1951.5, "currency": "JPY", "d1": 2.0925974365681332, "d7": 2.737562516451697, "d14": 1.7996870109546093, "m1": -1.0144559979710865, "m3": -17.08208727551639, "ytd": -0.6186171998358803, "y1": 23.44006303156241, "y2": -6.272341880518262, "as_of": "2026-05-12"}, {"ticker": "4188.T", "name": "Mitsubishi Chemical", "country": "JP", "category": "Photoresist & Process Chemicals", "price": 928.2999877929688, "currency": "JPY", "d1": 0.10783996691081654, "d7": 3.3741634513328123, "d14": 1.0889687610727172, "m1": -5.670154372247104, "m3": -16.835198789858286, "ytd": 3.1948731998886704, "y1": 31.75365989198451, "y2": 10.048968000617053, "as_of": "2026-05-12"}, {"ticker": "LIN", "name": "Linde", "country": "GB", "category": "Specialty Gases", "price": 504.3999938964844, "currency": "USD", "d1": 2.2791771739210542, "d7": 2.1983601199210057, "d14": -1.2432708964298822, "m1": 0.24843486339327647, "m3": 10.902887885829227, "ytd": 18.692800535203368, "y1": 12.933213723450688, "y2": 19.163423858006734, "as_of": "2026-05-11"}, {"ticker": "APD", "name": "Air Products & Chemicals", "country": "US", "category": "Specialty Gases", "price": 304.5, "currency": "USD", "d1": 3.0770780356808025, "d7": 2.0613352675282304, "d14": 0.7011029442932637, "m1": 1.9383377558673365, "m3": 6.997660022414287, "ytd": 24.94766848643588, "y1": 15.320753042209523, "y2": 27.959249430840515, "as_of": "2026-05-11"}, {"ticker": "AI.PA", "name": "Air Liquide", "country": "FR", "category": "Specialty Gases", "price": 176.05999755859375, "currency": "EUR", "d1": 0.03408952192827108, "d7": -1.8836406803528605, "d14": -3.0613355952389787, "m1": -6.619283001988396, "m3": 3.956068094057774, "ytd": 9.85898140105319, "y1": -1.1314182967578912, "y2": 7.484944259665971, "as_of": "2026-05-12"}, {"ticker": "4091.T", "name": "Nippon Sanso (Taiyo Nippon)", "country": "JP", "category": "Specialty Gases", "price": 5787.0, "currency": "JPY", "d1": -6.646233263429591, "d7": 4.761042722664732, "d14": 1.9376431213669276, "m1": -2.031488065007614, "m3": 4.897064933147655, "ytd": 24.672006597684803, "y1": 21.0091693847958, "y2": 25.753156488288397, "as_of": "2026-05-12"}, {"ticker": "4004.T", "name": "Resonac (Showa Denko)", "country": "JP", "category": "Specialty Gases", "price": 17815.0, "currency": "JPY", "d1": 5.727002967359041, "d7": 26.84229263082947, "d14": 25.856587778170258, "m1": 32.8981723237598, "m3": 87.17167472158016, "ytd": 172.9849831443457, "y1": 541.1880559632226, "y2": 405.1571620658887, "as_of": "2026-05-12"}, {"ticker": "8088.T", "name": "Iwatani Corp", "country": "JP", "category": "Specialty Gases", "price": 1901.0, "currency": "JPY", "d1": 1.6577540106951894, "d7": -0.20997375328084544, "d14": -3.722461382628517, "m1": -3.5514967021816335, "m3": -2.8364496334356115, "ytd": 16.7142140118435, "y1": 33.788372682209534, "y2": -11.65076931892256, "as_of": "2026-05-12"}, {"ticker": "ICL", "name": "ICL Group (bromine)", "country": "IL", "category": "Specialty Gases", "price": 6.5, "currency": "USD", "d1": 2.040818159755875, "d7": 17.540682701443643, "d14": 17.328520663488778, "m1": 25.48262964102721, "m3": 16.685377374358843, "ytd": 14.846197876849443, "y1": -4.476735055867298, "y2": 43.838086594582414, "as_of": "2026-05-11"}, {"ticker": "3436.T", "name": "SUMCO", "country": "JP", "category": "Silicon Wafers", "price": 3760.0, "currency": "JPY", "d1": 4.068641018544139, "d7": 48.44058428740623, "d14": 60.17039403620874, "m1": 84.90287681337595, "m3": 113.0915273448569, "ytd": 162.0209059233449, "y1": 278.26404328249845, "y2": 49.16657885112477, "as_of": "2026-05-12"}, {"ticker": "WAF.DE", "name": "Siltronic", "country": "DE", "category": "Silicon Wafers", "price": 94.0, "currency": "EUR", "d1": -2.388372771412728, "d7": 11.705286150341765, "d14": 34.189858536546055, "m1": 56.666666666666664, "m3": 66.51904115068297, "ytd": 92.22903285647799, "y1": 139.6736517519645, "y2": 28.649287565443117, "as_of": "2026-05-12"}, {"ticker": "SOI.PA", "name": "Soitec", "country": "FR", "category": "Silicon Wafers", "price": 153.64999389648438, "currency": "EUR", "d1": -4.978356959607433, "d7": -2.691577051476135, "d14": 55.57917230959366, "m1": 141.05740484847172, "m3": 341.5229806466591, "ytd": 562.5700317291016, "y1": 171.17895218897038, "y2": 54.42210441857726, "as_of": "2026-05-12"}, {"ticker": "4062.T", "name": "Ibiden", "country": "JP", "category": "ABF Substrates & Carriers", "price": 16550.0, "currency": "JPY", "d1": 5.717023315234759, "d7": 23.73831775700934, "d14": 31.76751592356688, "m1": 67.37459546925567, "m3": 109.39727607593616, "ytd": 146.32411347548654, "y1": 569.9877059675425, "y2": 533.0265479916203, "as_of": "2026-05-12"}, {"ticker": "3037.TW", "name": "Unimicron Technology", "country": "TW", "category": "ABF Substrates & Carriers", "price": 875.0, "currency": "TWD", "d1": 1.6260162601626105, "d7": -3.100775193798455, "d14": 6.060606060606055, "m1": 37.147335423197504, "m3": 137.12737127371275, "ytd": 297.7272727272727, "y1": 776.9926907589863, "y2": 374.2348575686912, "as_of": "2026-05-12"}, {"ticker": "3189.TW", "name": "Kinsus Interconnect", "country": "TW", "category": "ABF Substrates & Carriers", "price": 494.0, "currency": "TWD", "d1": -1.7892644135188873, "d7": -6.261859582542694, "d14": -2.7559055118110187, "m1": 29.65879265091864, "m3": 86.06403013182675, "ytd": 210.6918238993711, "y1": 514.7020042456967, "y2": 435.97228255687054, "as_of": "2026-05-12"}, {"ticker": "ATS.VI", "name": "AT&S Austria", "country": "AT", "category": "ABF Substrates & Carriers", "price": 100.19999694824219, "currency": "EUR", "d1": -2.5291887415670344, "d7": -0.7920822294631757, "d14": 13.993168610744554, "m1": 50.450449315216005, "m3": 94.56310087037319, "ytd": 211.1801073730633, "y1": 502.16346528579516, "y2": 416.49483978615274, "as_of": "2026-05-12"}, {"ticker": "8046.TW", "name": "Nan Ya PCB", "country": "TW", "category": "ABF Substrates & Carriers", "price": 900.0, "currency": "TWD", "d1": -0.8810572687224627, "d7": -9.729187562688068, "d14": -3.433476394849788, "m1": 34.93253373313343, "m3": 116.34615384615384, "ytd": 273.4439834024896, "y1": 748.5650655172612, "y2": 392.31743115911996, "as_of": "2026-05-12"}, {"ticker": "036710.KS", "name": "Simmtech", "country": "KR", "category": "ABF Substrates & Carriers", "price": 5790.0, "currency": "KRW", "d1": 14.426877470355738, "d7": 55.020080321285135, "d14": 55.020080321285135, "m1": 95.60810810810811, "m3": 120.57142857142856, "ytd": 112.86764705882355, "y1": 326.4196019847093, "y2": 129.20562935761586, "as_of": "2026-05-11"}, {"ticker": "011070.KS", "name": "LG Innotek", "country": "KR", "category": "ABF Substrates & Carriers", "price": 696000.0, "currency": "KRW", "d1": 1.1627906976744207, "d7": 16.974789915966394, "d14": 20.62391681109186, "m1": 83.1578947368421, "m3": 178.92696276440265, "ytd": 158.3419439581716, "y1": 368.2987877470228, "y2": 202.87980600026222, "as_of": "2026-05-12"}, {"ticker": "009150.KS", "name": "Samsung Electro-Mechanics", "country": "KR", "category": "ABF Substrates & Carriers", "price": 958000.0, "currency": "KRW", "d1": 6.444444444444453, "d7": 4.357298474945526, "d14": 14.183551847437425, "m1": 69.55752212389382, "m3": 209.53150242326336, "ytd": 275.6862745098039, "y1": 668.4991072803421, "y2": 538.5380278598041, "as_of": "2026-05-12"}, {"ticker": "2802.T", "name": "Ajinomoto (ABF film)", "country": "JP", "category": "ABF Substrates & Carriers", "price": 5439.0, "currency": "JPY", "d1": -1.0911074740861948, "d7": 11.409258500614495, "d14": 14.09691629955947, "m1": 16.917454858125545, "m3": 27.014392020733567, "ytd": 64.84682951604914, "y1": 69.19285247979315, "y2": 83.09084240227638, "as_of": "2026-05-12"}, {"ticker": "TSM", "name": "TSMC (ADR)", "country": "TW", "category": "Foundries (Pure-play)", "price": 404.5400085449219, "currency": "USD", "d1": -1.7343529580954087, "d7": 0.7295693085903832, "d14": -0.10864794050813309, "m1": 9.158122472325637, "m3": 14.144203511975139, "ytd": 33.49563459326026, "y1": 132.01359810300056, "y2": 178.22592332837615, "as_of": "2026-05-11"}, {"ticker": "2330.TW", "name": "TSMC (Taiwan)", "country": "TW", "category": "Foundries (Pure-play)", "price": 2255.0, "currency": "TWD", "d1": 0.8948545861297452, "d7": 0.22222222222221255, "d14": 1.8058690744920947, "m1": 12.749999999999995, "m3": 18.13876144801483, "ytd": 45.95853276947217, "y1": 139.14821985139065, "y2": 190.19993802624185, "as_of": "2026-05-12"}, {"ticker": "UMC", "name": "UMC (ADR)", "country": "TW", "category": "Foundries (Pure-play)", "price": 15.59000015258789, "currency": "USD", "d1": 1.1024648213542987, "d7": 20.107863654838653, "d14": 33.36185382546193, "m1": 60.06160697063485, "m3": 55.12437668369774, "ytd": 98.3460545517473, "y1": 122.49646056507375, "y2": 117.11992458119815, "as_of": "2026-05-11"}, {"ticker": "2303.TW", "name": "UMC (Taiwan)", "country": "TW", "category": "Foundries (Pure-play)", "price": 104.5, "currency": "TWD", "d1": 10.000000000000009, "d7": 25.75210820556546, "d14": 39.14780575662719, "m1": 68.5483870967742, "m3": 66.4012759069124, "ytd": 112.18274111675126, "y1": 139.49658420278263, "y2": 124.97744603823494, "as_of": "2026-05-12"}, {"ticker": "GFS", "name": "GlobalFoundries", "country": "US", "category": "Foundries (Pure-play)", "price": 74.98999786376953, "currency": "USD", "d1": 1.173765629990653, "d7": 10.686343710360923, "d14": 24.258491731240504, "m1": 53.25975351738785, "m3": 72.29177538151792, "ytd": 114.74800056106203, "y1": 106.12972969232129, "y2": 46.780187198670454, "as_of": "2026-05-11"}, {"ticker": "0981.HK", "name": "SMIC (HK)", "country": "CN", "category": "Foundries (Pure-play)", "price": 76.6500015258789, "currency": "HKD", "d1": 0.06527813675440974, "d7": 8.262709353055397, "d14": 16.048445093658458, "m1": 31.587985452152623, "m3": 9.500002179827005, "ytd": 7.428175424110406, "y1": 72.44094535491317, "y2": 371.4022167707556, "as_of": "2026-05-12"}, {"ticker": "688981.SS", "name": "SMIC (Shanghai)", "country": "CN", "category": "Foundries (Pure-play)", "price": 121.9800033569336, "currency": "CNY", "d1": -0.4407389005289919, "d7": 2.737303047343187, "d14": 7.000002944678596, "m1": 20.76032152976419, "m3": 6.060343527728218, "ytd": -0.6920120992021328, "y1": 41.31140383246266, "y2": 183.74040147579706, "as_of": "2026-05-12"}, {"ticker": "1347.HK", "name": "Hua Hong Semi (HK)", "country": "CN", "category": "Foundries (Pure-play)", "price": 130.3000030517578, "currency": "HKD", "d1": -2.761191752419545, "d7": 9.495800883830086, "d14": 15.004412658518685, "m1": 41.63043809973674, "m3": 30.823298240926622, "ytd": 75.84346253025116, "y1": 294.8484940962358, "y2": 629.2881760367644, "as_of": "2026-05-12"}, {"ticker": "688347.SS", "name": "Hua Hong Semi (Shanghai)", "country": "CN", "category": "Foundries (Pure-play)", "price": 160.66000366210938, "currency": "CNY", "d1": -2.280883107153797, "d7": 13.943265008588202, "d14": 16.352840043181672, "m1": 32.110848495821685, "m3": 22.212076264227054, "ytd": 48.93853673068536, "y1": null, "y2": null, "as_of": "2026-05-12"}, {"ticker": "6770.TW", "name": "Powerchip (PSMC)", "country": "TW", "category": "Foundries (Pure-play)", "price": 62.099998474121094, "currency": "TWD", "d1": -0.6400024414062511, "d7": 12.093856974195983, "d14": 12.909088134765634, "m1": 12.093856974195983, "m3": -1.584786092205892, "ytd": 57.016434063366404, "y1": 307.213104748335, "y2": 155.0307905595722, "as_of": "2026-05-12"}, {"ticker": "TSEM", "name": "Tower Semiconductor", "country": "IL", "category": "Foundries (Pure-play)", "price": 228.8800048828125, "currency": "USD", "d1": 8.463652852215574, "d7": 6.4261171213179535, "d14": 12.565781154611466, "m1": 12.42202907796559, "m3": 55.14133178108018, "ytd": 94.92421091124288, "y1": 510.3466796875, "y2": 523.4813690845953, "as_of": "2026-05-11"}, {"ticker": "INTC", "name": "Intel (x86 CPU + IDM)", "country": "US", "category": "Compute \u2014 CPU (Intel / AMD / ARM)", "price": 129.44000244140625, "currency": "USD", "d1": 3.6183191952564364, "d7": 35.14304039580451, "d14": 52.30027732073324, "m1": 107.50240497762337, "m3": 157.64330835379948, "ytd": 250.7858999697512, "y1": 504.2950605992797, "y2": 336.38563504406625, "as_of": "2026-05-11"}, {"ticker": "005930.KS", "name": "Samsung Electronics (memory+foundry)", "country": "KR", "category": "Memory \u2014 HBM / Diversified DRAM+NAND+HBM", "price": 279000.0, "currency": "KRW", "d1": -2.276707530647981, "d7": 19.999999999999996, "d14": 25.67567567567568, "m1": 35.4368932038835, "m3": 66.61351133309658, "ytd": 133.17554111847474, "y1": 392.91816608824604, "y2": 266.7402947375253, "as_of": "2026-05-12"}, {"ticker": "MU", "name": "Micron Technology", "country": "US", "category": "Memory \u2014 HBM / Diversified DRAM+NAND+HBM", "price": 795.3300170898438, "currency": "USD", "d1": 6.496969736595304, "d7": 37.97033571823432, "d14": 51.61850327731192, "m1": 89.0986528483424, "m3": 107.47435108175134, "ytd": 178.77933607377017, "y1": 828.5275126349774, "y2": 560.5978348691339, "as_of": "2026-05-11"}, {"ticker": "000660.KS", "name": "SK Hynix (HBM leader)", "country": "KR", "category": "Memory \u2014 HBM / Diversified DRAM+NAND+HBM", "price": 1835000.0, "currency": "KRW", "d1": -2.393617021276595, "d7": 26.8140981340705, "d14": 41.15384615384616, "m1": 78.67575462512171, "m3": 113.76581983560419, "ytd": 182.39417552394653, "y1": 846.5063526904789, "y2": 935.6110338782548, "as_of": "2026-05-12"}, {"ticker": "TXN", "name": "Texas Instruments", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 297.760009765625, "currency": "USD", "d1": 3.4607444041384383, "d7": 6.544533747820003, "d14": 11.047476922110388, "m1": 39.37174724561532, "m3": 36.79797538435612, "ytd": 73.62751603745599, "y1": 77.69299960243536, "y2": 68.4532779545556, "as_of": "2026-05-11"}, {"ticker": "ADI", "name": "Analog Devices", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 422.7300109863281, "currency": "USD", "d1": 1.4909301201514236, "d7": 6.475750008589842, "d14": 7.67722431279092, "m1": 20.731705403844103, "m3": 31.29815440632635, "ytd": 56.36196101498791, "y1": 106.82355644553878, "y2": 110.5811421261342, "as_of": "2026-05-11"}, {"ticker": "STM", "name": "STMicroelectronics (NYSE)", "country": "FR", "category": "IDMs - Analog/Auto/Industrial", "price": 60.119998931884766, "currency": "USD", "d1": 1.6055446887575764, "d7": 9.05132916214566, "d14": 18.908222505792782, "m1": 52.279634318555246, "m3": 85.45492778716684, "ytd": 132.42632565883832, "y1": 154.39596261887408, "y2": 52.19357783750673, "as_of": "2026-05-11"}, {"ticker": "IFX.DE", "name": "Infineon Technologies", "country": "DE", "category": "IDMs - Analog/Auto/Industrial", "price": 60.630001068115234, "currency": "EUR", "d1": -1.8773261534628216, "d7": 0.2148777985375716, "d14": 14.829549136733267, "m1": 41.57618210852232, "m3": 42.53245314903653, "ytd": 61.93092792002419, "y1": 79.53730186701368, "y2": 62.24923848328143, "as_of": "2026-05-12"}, {"ticker": "NXPI", "name": "NXP Semiconductors", "country": "NL", "category": "IDMs - Analog/Auto/Industrial", "price": 305.989990234375, "currency": "USD", "d1": 3.813397874257851, "d7": 5.237990080213084, "d14": 29.180561718250363, "m1": 49.72353943587351, "m3": 34.36634470603559, "ytd": 41.7018329823768, "y1": 62.50932651292105, "y2": 21.23557100124771, "as_of": "2026-05-11"}, {"ticker": "6723.T", "name": "Renesas Electronics", "country": "JP", "category": "IDMs - Analog/Auto/Industrial", "price": 3750.0, "currency": "JPY", "d1": 7.14285714285714, "d7": 17.004680187207487, "d14": 28.733264675592164, "m1": 41.163184641445504, "m3": 25.733445096395634, "ytd": 75.23364485981307, "y1": 103.49179196779743, "y2": 52.270103371176816, "as_of": "2026-05-12"}, {"ticker": "ON", "name": "onsemi", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 107.23999786376953, "currency": "USD", "d1": 3.9147296850730706, "d7": 5.096037731856695, "d14": 9.383921728202594, "m1": 56.21266639497946, "m3": 64.73118337537313, "ytd": 98.04246508195997, "y1": 161.6886263096266, "y2": 52.19982863639026, "as_of": "2026-05-11"}, {"ticker": "MCHP", "name": "Microchip Technology", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 99.02999877929688, "currency": "USD", "d1": -0.06054855264012726, "d7": 3.9139513201413845, "d14": 14.037313398742546, "m1": 38.3873702597747, "m3": 33.8705595247844, "ytd": 56.3293931803966, "y1": 84.3330288822817, "y2": 14.235006548680706, "as_of": "2026-05-11"}, {"ticker": "285A.T", "name": "Kioxia Holdings", "country": "JP", "category": "Memory \u2014 NAND Pure-play", "price": 46100.0, "currency": "JPY", "d1": 0.3482803656943867, "d7": 26.613567701180997, "d14": 26.927312775330403, "m1": 52.952886529528875, "m3": 144.6272220748209, "ytd": 341.78246286535693, "y1": 1975.641602881585, "y2": null, "as_of": "2026-05-12"}, {"ticker": "SNDK", "name": "Sandisk", "country": "US", "category": "Memory \u2014 NAND Pure-play", "price": 1547.56005859375, "currency": "USD", "d1": -0.946010954715748, "d7": 23.227117405172336, "d14": 44.604758848957424, "m1": 81.68754747266291, "m3": 165.26568286452186, "ytd": 551.9336198336227, "y1": 4000.5829087621287, "y2": null, "as_of": "2026-05-11"}, {"ticker": "WDC", "name": "Western Digital (HDD)", "country": "US", "category": "Storage \u2014 HDD / Drives / Systems", "price": 515.8300170898438, "currency": "USD", "d1": 7.464586893717451, "d7": 16.60865226765289, "d14": 28.722582024794384, "m1": 50.199466584393114, "m3": 80.45278251345678, "ytd": 199.5744422918332, "y1": 1074.731488444308, "y2": 857.246992589891, "as_of": "2026-05-11"}, {"ticker": "WOLF", "name": "Wolfspeed (SiC)", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 50.310001373291016, "currency": "USD", "d1": 7.961379872641494, "d7": 39.98331467910212, "d14": 69.5652215838322, "m1": 116.66667898804062, "m3": 237.87777174801707, "ytd": 188.97186567620383, "y1": null, "y2": null, "as_of": "2026-05-11"}, {"ticker": "AMS.SW", "name": "ams OSRAM", "country": "CH", "category": "IDMs - Analog/Auto/Industrial", "price": 19.149999618530273, "currency": "CHF", "d1": -1.0847158326482864, "d7": 55.06072086656329, "d14": 64.23670556720067, "m1": 83.95773198105184, "m3": 121.13163921420758, "ytd": 143.94904269016826, "y1": 137.88818838254113, "y2": 52.7113211864834, "as_of": "2026-05-12"}, {"ticker": "VSH", "name": "Vishay Intertechnology", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 34.83000183105469, "currency": "USD", "d1": 1.6637581361562015, "d7": 13.935237745362894, "d14": 25.42312299932732, "m1": 55.006688453053634, "m3": 79.82636532647862, "ytd": 141.75413800343733, "y1": 172.0451529697484, "y2": 62.19120440142309, "as_of": "2026-05-11"}, {"ticker": "DIOD", "name": "Diodes Inc", "country": "US", "category": "IDMs - Analog/Auto/Industrial", "price": 111.98999786376953, "currency": "USD", "d1": 0.5205943654926992, "d7": 3.0266798600683265, "d14": 10.57464377325994, "m1": 34.81401020246688, "m3": 83.2596903047638, "ytd": 126.97607928137722, "y1": 150.25697846652412, "y2": 61.555104380837534, "as_of": "2026-05-11"}, {"ticker": "6963.T", "name": "ROHM", "country": "JP", "category": "IDMs - Analog/Auto/Industrial", "price": 3967.0, "currency": "JPY", "d1": -0.824999999999998, "d7": 13.765414396329213, "d14": 15.622267560477997, "m1": 8.655162969049579, "m3": 55.893016507810664, "ytd": 80.08452278936731, "y1": 186.53865433009983, "y2": 104.23853708943062, "as_of": "2026-05-12"}, {"ticker": "NVDA", "name": "NVIDIA (GPU dominator)", "country": "US", "category": "Compute \u2014 GPU", "price": 219.44000244140625, "currency": "USD", "d1": 1.9702628035742187, "d7": 10.560261570460616, "d14": 1.3064963866305623, "m1": 16.333561342870475, "m3": 15.476681912096302, "ytd": 17.668563304448615, "y1": 88.16263068294035, "y2": 144.29098941688034, "as_of": "2026-05-11"}, {"ticker": "AMD", "name": "AMD (x86 CPU + GPU)", "country": "US", "category": "Compute \u2014 CPU (Intel / AMD / ARM)", "price": 458.7900085449219, "currency": "USD", "d1": 0.7908798708686549, "d7": 34.329799457324306, "d14": 37.10366728936643, "m1": 87.23066483649202, "m3": 112.40278173376015, "ytd": 114.22768056577786, "y1": 346.1202108929715, "y2": 201.99448003857685, "as_of": "2026-05-11"}, {"ticker": "AVGO", "name": "Broadcom (Google TPU, Meta MTIA)", "country": "US", "category": "Compute \u2014 Custom ASIC / Hyperscaler Silicon", "price": 428.42999267578125, "currency": "USD", "d1": -0.36511798237645054, "d7": 2.8643439797794157, "d14": 2.4461932496753658, "m1": 15.308843157466768, "m3": 24.82662812713563, "ytd": 24.047585702022523, "y1": 107.44541825416434, "y2": 228.01729108042267, "as_of": "2026-05-11"}, {"ticker": "MRVL", "name": "Marvell (AWS Trainium, custom)", "country": "US", "category": "Compute \u2014 Custom ASIC / Hyperscaler Silicon", "price": 170.83999633789062, "currency": "USD", "d1": 0.4173228911426685, "d7": 4.387139505755466, "d14": 7.983053592093947, "m1": 32.959754871346526, "m3": 107.55981969116952, "ytd": 101.28088999463456, "y1": 187.17829677076807, "y2": 151.0127738586586, "as_of": "2026-05-11"}, {"ticker": "QCOM", "name": "Qualcomm (mobile SoC + modem)", "country": "US", "category": "Compute \u2014 Mobile/Client SoC", "price": 237.52999877929688, "currency": "USD", "d1": 8.416633689183705, "d7": 41.067817966041, "d14": 58.079334129411706, "m1": 85.48336975456775, "m3": 72.0687166589052, "ytd": 39.75741081386865, "y1": 67.44421239047713, "y2": 36.1854466511498, "as_of": "2026-05-11"}, {"ticker": "2454.TW", "name": "MediaTek (mobile SoC)", "country": "TW", "category": "Compute \u2014 Mobile/Client SoC", "price": 3700.0, "currency": "TWD", "d1": -4.639175257731953, "d7": 17.27416798732171, "d14": 41.49139579349905, "m1": 134.92063492063494, "m3": 99.46091644204851, "ytd": 163.75697225958947, "y1": 192.4693466064354, "y2": 266.5108542492268, "as_of": "2026-05-12"}, {"ticker": "ARM", "name": "Arm Holdings (CPU IP)", "country": "GB", "category": "Compute \u2014 CPU (Intel / AMD / ARM)", "price": 212.64999389648438, "currency": "USD", "d1": -0.2907161642780598, "d7": 4.619698732370403, "d14": -1.4962066487266834, "m1": 42.78520402496815, "m3": 70.6524298651028, "ytd": 94.53846733689386, "y1": 83.63556847355058, "y2": 95.37853826852273, "as_of": "2026-05-11"}, {"ticker": "ALAB", "name": "Astera Labs (PCIe/CXL retimers)", "country": "US", "category": "Compute \u2014 AI Networking / Connectivity IC", "price": 207.35000610351562, "currency": "USD", "d1": 3.7839797144172405, "d7": 3.0310589334239024, "d14": 5.446504651703621, "m1": 39.11439239052754, "m3": 10.48649657728129, "ytd": 24.639339590513032, "y1": 191.2219311669995, "y2": 195.87614253119528, "as_of": "2026-05-11"}, {"ticker": "CRDO", "name": "Credo Technology (SerDes/AECs)", "country": "US", "category": "Compute \u2014 AI Networking / Connectivity IC", "price": 210.22000122070312, "currency": "USD", "d1": 11.519586098729917, "d7": 16.74997449241602, "d14": 16.465374637508656, "m1": 75.7839348257405, "m3": 70.34275584034123, "ytd": 46.097714999244424, "y1": 313.8189062556906, "y2": 1089.0271357018114, "as_of": "2026-05-11"}, {"ticker": "AMBA", "name": "Ambarella (edge AI vision)", "country": "US", "category": "Compute \u2014 AI Edge / Smart Sensors", "price": 79.72000122070312, "currency": "USD", "d1": 4.482304105054058, "d7": 12.726244124222763, "d14": 22.910885708471508, "m1": 51.04206719302455, "m3": 22.17624708153736, "ytd": 12.535298336912536, "y1": 48.04086068640183, "y2": 73.87132796896192, "as_of": "2026-05-11"}, {"ticker": "LSCC", "name": "Lattice Semiconductor (FPGA)", "country": "US", "category": "Compute \u2014 FPGA / Programmable", "price": 128.9600067138672, "currency": "USD", "d1": 1.3916221703638598, "d7": 2.6996950125681263, "d14": 8.160700396699072, "m1": 21.54571966871601, "m3": 47.3155190371868, "ytd": 75.26502243091706, "y1": 159.84284492936968, "y2": 85.42056226496146, "as_of": "2026-05-11"}, {"ticker": "SLAB", "name": "Silicon Labs (IoT)", "country": "US", "category": "Compute \u2014 AI Edge / Smart Sensors", "price": 217.2100067138672, "currency": "USD", "d1": -0.11036571061995293, "d7": 0.0967772874963968, "d14": 1.0279100994731172, "m1": 2.8359082750430975, "m3": 5.744609727561434, "ytd": 66.18975653066263, "y1": 85.5702700134233, "y2": 74.32585021979821, "as_of": "2026-05-11"}, {"ticker": "SYNA", "name": "Synaptics (HMI + edge)", "country": "US", "category": "Compute \u2014 AI Edge / Smart Sensors", "price": 126.55000305175781, "currency": "USD", "d1": 0.8929305141170518, "d7": 25.545634147231254, "d14": 37.95922644779046, "m1": 71.47696181395153, "m3": 44.86035046657555, "ytd": 70.96731801002045, "y1": 111.5159605194466, "y2": 42.286934537840914, "as_of": "2026-05-11"}, {"ticker": "RMBS", "name": "Rambus (memory + security IP)", "country": "US", "category": "Compute \u2014 Chip IP / RISC-V", "price": 134.50999450683594, "currency": "USD", "d1": 4.069628245134194, "d7": 20.636766373843884, "d14": -4.812117450457254, "m1": 21.79463195702116, "m3": 21.26757728751496, "ytd": 46.38153814373484, "y1": 163.64169600152886, "y2": 137.23102768413904, "as_of": "2026-05-11"}, {"ticker": "3661.TW", "name": "Alchip Technologies (ASIC design)", "country": "TW", "category": "Compute \u2014 Custom ASIC / Hyperscaler Silicon", "price": 5310.0, "currency": "TWD", "d1": -1.2093023255813962, "d7": 27.95180722891566, "d14": 32.74999999999999, "m1": 75.53719008264463, "m3": 57.10059171597632, "ytd": 51.28205128205128, "y1": 111.86951927688087, "y2": 112.28981246550251, "as_of": "2026-05-12"}, {"ticker": "3443.TW", "name": "Global Unichip / GUC (ASIC)", "country": "TW", "category": "Compute \u2014 Custom ASIC / Hyperscaler Silicon", "price": 5570.0, "currency": "TWD", "d1": -2.7923211169284423, "d7": 15.201654601861424, "d14": 32.93556085918854, "m1": 109.00562851782362, "m3": 125.05050505050504, "ytd": 162.11764705882354, "y1": 391.53002474161775, "y2": 349.4104653154377, "as_of": "2026-05-12"}, {"ticker": "3035.TW", "name": "Faraday Technology (ASIC)", "country": "TW", "category": "Compute \u2014 Custom ASIC / Hyperscaler Silicon", "price": 208.5, "currency": "TWD", "d1": 6.649616368286448, "d7": 17.796610169491522, "d14": 18.130311614730886, "m1": 39.464882943143806, "m3": 28.7037037037037, "ytd": 22.287390029325515, "y1": 14.618327449300118, "y2": -21.251651125531644, "as_of": "2026-05-12"}, {"ticker": "6533.TW", "name": "Andes Technology (RISC-V IP)", "country": "TW", "category": "Compute \u2014 Chip IP / RISC-V", "price": 245.5, "currency": "TWD", "d1": -2.964426877470361, "d7": 0.8213552361396204, "d14": 6.047516198704095, "m1": 40.28571428571428, "m3": 10.089686098654704, "ytd": 2.2916666666666696, "y1": -16.354344122657583, "y2": -34.005376344086024, "as_of": "2026-05-12"}, {"ticker": "CEVA", "name": "CEVA (DSP/AI IP)", "country": "US", "category": "Compute \u2014 Chip IP / RISC-V", "price": 36.459999084472656, "currency": "USD", "d1": -1.3795026221012585, "d7": 12.081157247620178, "d14": 34.34045653803144, "m1": 77.07624484835236, "m3": 58.86709312598224, "ytd": 69.4237839633463, "y1": 81.57370130977289, "y2": 85.92553773418273, "as_of": "2026-05-11"}, {"ticker": "MPWR", "name": "Monolithic Power Systems (power)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 1661.0999755859375, "currency": "USD", "d1": 3.7642744466806377, "d7": 5.580621879673275, "d14": 4.631608797379361, "m1": 22.69453820886056, "m3": 37.9910946931904, "ytd": 83.63796317613588, "y1": 162.43353090486875, "y2": 140.07110888740243, "as_of": "2026-05-11"}, {"ticker": "ALGM", "name": "Allegro MicroSystems (sensors/power)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 48.38999938964844, "currency": "USD", "d1": -1.1440273024775904, "d7": -2.2029105955376216, "d14": 11.318145918528533, "m1": 29.039998372395836, "m3": 15.24171815992965, "ytd": 83.4344235371167, "y1": 116.70398367658063, "y2": 80.82959258506108, "as_of": "2026-05-11"}, {"ticker": "POWI", "name": "Power Integrations (AC-DC)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 74.33999633789062, "currency": "USD", "d1": 1.4465032427009472, "d7": 2.045295669153413, "d14": 5.267620286928754, "m1": 36.3286227802281, "m3": 63.07335085141668, "ytd": 110.10492101409955, "y1": 40.076647674502766, "y2": 1.7635556480182668, "as_of": "2026-05-11"}, {"ticker": "NVTS", "name": "Navitas (GaN power)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 22.649999618530273, "currency": "USD", "d1": 24.450542137626297, "d7": 42.273866268743255, "d14": 23.770494878820813, "m1": 137.4213805985256, "m3": 145.66159395382914, "ytd": 217.22689134557237, "y1": 1104.7872168073939, "y2": 452.4390279360289, "as_of": "2026-05-11"}, {"ticker": "SWKS", "name": "Skyworks Solutions (RF/PA)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 70.12999725341797, "currency": "USD", "d1": 5.016469804368517, "d7": 1.8591122841898011, "d14": 12.894395459208319, "m1": 24.4322152128176, "m3": 15.309398977503452, "ytd": 11.92703715472032, "y1": 7.298462255358817, "y2": -18.02235262945593, "as_of": "2026-05-11"}, {"ticker": "QRVO", "name": "Qorvo (RF/PA)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 93.41000366210938, "currency": "USD", "d1": 3.1812713151953886, "d7": 0.9510481945552485, "d14": 8.818741434262245, "m1": 17.040479287737064, "m3": 12.325636782854389, "ytd": 10.531299610585808, "y1": 27.626725708734146, "y2": -4.381204496196, "as_of": "2026-05-11"}, {"ticker": "MTSI", "name": "MACOM Technology (RF/optical)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 365.8800048828125, "currency": "USD", "d1": 1.6672223848484657, "d7": 25.421638335316963, "d14": 30.933295765172787, "m1": 41.75352587946579, "m3": 55.23123021641649, "ytd": 113.61513748856792, "y1": 209.85772290747641, "y2": 258.91700619991195, "as_of": "2026-05-11"}, {"ticker": "VICR", "name": "Vicor Corp (power modules)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 312.9599914550781, "currency": "USD", "d1": 22.025964036925714, "d7": 24.675319149220698, "d14": 16.5109297949104, "m1": 68.61159982002833, "m3": 96.78068703890348, "ytd": 185.54744143447658, "y1": 660.7194849249912, "y2": 849.2265085466803, "as_of": "2026-05-11"}, {"ticker": "SITM", "name": "SiTime (precision timing)", "country": "US", "category": "Compute \u2014 AI Edge / Smart Sensors", "price": 901.47998046875, "currency": "USD", "d1": 8.21049142648318, "d7": 59.64439898021092, "d14": 64.5096559362645, "m1": 114.47467756950785, "m3": 115.99578591833372, "ytd": 155.23938226940732, "y1": 374.43819090069906, "y2": 632.017839463292, "as_of": "2026-05-11"}, {"ticker": "CRUS", "name": "Cirrus Logic (audio)", "country": "US", "category": "Compute \u2014 AI Edge / Smart Sensors", "price": 174.22999572753906, "currency": "USD", "d1": 1.4912317736931469, "d7": 6.127792940730337, "d14": 2.014170956516792, "m1": 8.89374732971191, "m3": 24.7797676966103, "ytd": 47.02953225952664, "y1": 73.31144717313967, "y2": 64.16658836946112, "as_of": "2026-05-11"}, {"ticker": "SMTC", "name": "Semtech (LoRa/analog)", "country": "US", "category": "Analog / Power / RF (Fabless)", "price": 136.52999877929688, "currency": "USD", "d1": 12.084394972278378, "d7": 27.478992273083037, "d14": 34.791191179037085, "m1": 60.20886742973741, "m3": 53.83661834286973, "ytd": 85.27614907850915, "y1": 289.3070999924946, "y2": 244.8598086715902, "as_of": "2026-05-11"}, {"ticker": "ASX", "name": "ASE Technology (ADR)", "country": "TW", "category": "OSAT (Outsourced Assembly & Test)", "price": 35.29999923706055, "currency": "USD", "d1": 3.1259120921224293, "d7": 9.355639937943817, "d14": 14.424631444295688, "m1": 42.109496860783665, "m3": 59.36794512415806, "ytd": 119.25464845136919, "y1": 294.9120576811565, "y2": 257.78090910162945, "as_of": "2026-05-11"}, {"ticker": "3711.TW", "name": "ASE Technology (TW)", "country": "TW", "category": "OSAT (Outsourced Assembly & Test)", "price": 555.0, "currency": "TWD", "d1": 3.3519553072625774, "d7": 6.730769230769229, "d14": 12.008072653884971, "m1": 41.221374045801525, "m3": 56.558533145275035, "ytd": 121.55688622754491, "y1": 305.6089992890896, "y2": 292.28626035828813, "as_of": "2026-05-12"}, {"ticker": "AMKR", "name": "Amkor Technology", "country": "US", "category": "OSAT (Outsourced Assembly & Test)", "price": 76.69000244140625, "currency": "USD", "d1": 0.10442739905667242, "d7": 8.074976650031296, "d14": 1.4149691298081635, "m1": 32.31539622634556, "m3": 46.30037788530792, "ytd": 94.62249014995763, "y1": 327.32461289309845, "y2": 144.4279686209322, "as_of": "2026-05-11"}, {"ticker": "0522.HK", "name": "ASMPT", "country": "HK", "category": "OSAT (Outsourced Assembly & Test)", "price": 176.89999389648438, "currency": "HKD", "d1": 2.6876354032595806, "d7": 9.038798520017387, "d14": 4.864757299424394, "m1": 55.919761827093325, "m3": 69.58128920079277, "ytd": 129.16392153886082, "y1": 222.74076871329407, "y2": 85.7905460959214, "as_of": "2026-05-12"}, {"ticker": "6239.TW", "name": "Powertech Technology", "country": "TW", "category": "OSAT (Outsourced Assembly & Test)", "price": 226.5, "currency": "TWD", "d1": 0.44345898004434225, "d7": -0.439560439560438, "d14": 3.661327231121292, "m1": 5.594405594405605, "m3": -6.79012345679012, "ytd": 30.924855491329485, "y1": 108.30687264163986, "y2": 51.93878272746619, "as_of": "2026-05-12"}, {"ticker": "IMOS", "name": "ChipMOS Technologies", "country": "TW", "category": "OSAT (Outsourced Assembly & Test)", "price": 57.16999816894531, "currency": "USD", "d1": -5.143524581505177, "d7": 18.757787481897225, "d14": 31.88004655426788, "m1": 39.74577947245281, "m3": 67.50658183352473, "ytd": 92.94633745600885, "y1": 238.35596505671393, "y2": 141.74152684025856, "as_of": "2026-05-11"}, {"ticker": "600584.SS", "name": "JCET Group", "country": "CN", "category": "OSAT (Outsourced Assembly & Test)", "price": 55.2400016784668, "currency": "CNY", "d1": -1.0567797478733265, "d7": 21.246707667683616, "d14": 22.483378153913147, "m1": 28.405395375810194, "m3": 19.592992684188392, "ytd": 50.190330374782086, "y1": 62.48061958097229, "y2": 112.21810454582925, "as_of": "2026-05-12"}, {"ticker": "002156.SZ", "name": "Tongfu Microelectronics", "country": "CN", "category": "OSAT (Outsourced Assembly & Test)", "price": 59.47999954223633, "currency": "CNY", "d1": -2.8422111136423345, "d7": 14.892793154913765, "d14": 18.368158293007617, "m1": 31.50563816984604, "m3": 24.51329071019408, "ytd": 57.771878882048846, "y1": 128.68417382157577, "y2": 197.68559618927614, "as_of": "2026-05-12"}, {"ticker": "002185.SZ", "name": "Tianshui Huatian Tech", "country": "CN", "category": "OSAT (Outsourced Assembly & Test)", "price": 14.430000305175781, "currency": "CNY", "d1": -2.103117169308255, "d7": 10.068655095854462, "d14": 14.071152097412586, "m1": 17.892161560535325, "m3": 4.565218157488804, "ytd": 31.540564757744562, "y1": 51.416586668433254, "y2": 77.10991887752385, "as_of": "2026-05-12"}, {"ticker": "2408.TW", "name": "Nanya Technology (DRAM)", "country": "TW", "category": "Memory \u2014 DRAM Pure-play (specialty/legacy)", "price": 321.0, "currency": "TWD", "d1": 6.644518272425248, "d7": 25.14619883040936, "d14": 35.157894736842096, "m1": 49.30232558139536, "m3": 15.467625899280568, "ytd": 66.32124352331606, "y1": 762.9032081090618, "y2": 398.44719315885004, "as_of": "2026-05-12"}, {"ticker": "2344.TW", "name": "Winbond Electronics (DRAM/NOR)", "country": "TW", "category": "Memory \u2014 NOR Flash / Niche", "price": 121.5, "currency": "TWD", "d1": 3.404255319148941, "d7": 22.975704703521593, "d14": 27.225130890052363, "m1": 29.946524064171133, "m3": 15.76883667761335, "ytd": 47.86455798841966, "y1": 637.9826209536997, "y2": 382.7515043121088, "as_of": "2026-05-12"}, {"ticker": "2337.TW", "name": "Macronix International (NOR/NAND)", "country": "TW", "category": "Memory \u2014 NOR Flash / Niche", "price": 153.0, "currency": "TWD", "d1": -4.075235109717868, "d7": -4.672897196261683, "d14": -4.075235109717868, "m1": 4.794520547945202, "m3": 55.32994923857868, "ytd": 287.8326921193191, "y1": 637.3493975903615, "y2": 479.32563966733727, "as_of": "2026-05-12"}, {"ticker": "PSTG", "name": "Pure Storage (SSD systems)", "country": "US", "category": "Storage \u2014 HDD / Drives / Systems", "price": 87.33999633789062, "currency": "USD", "d1": 11.745128256987991, "d7": 20.054977784042105, "d14": 18.0748883284396, "m1": 43.32129685938484, "m3": 17.36092244938632, "ytd": 30.33874578951592, "y1": 79.34290548175123, "y2": 60.52195659405935, "as_of": "2026-05-11"}, {"ticker": "COHR", "name": "Coherent Corp", "country": "US", "category": "Networking / Optical / Photonics", "price": 379.69000244140625, "currency": "USD", "d1": 13.252398550856558, "d7": 15.095936700612288, "d14": 18.08851549868331, "m1": 23.47642355818089, "m3": 56.59902331417792, "ytd": 105.71598167325011, "y1": 438.033164352208, "y2": 607.1894433845695, "as_of": "2026-05-11"}, {"ticker": "LITE", "name": "Lumentum Holdings", "country": "US", "category": "Networking / Optical / Photonics", "price": 1053.0899658203125, "currency": "USD", "d1": 16.518032755444256, "d7": 7.878667225468883, "d14": 22.4979032654391, "m1": 17.36208404622075, "m3": 82.46381725261753, "ytd": 185.70769046453802, "y1": 1523.3851105791719, "y2": 2304.8639958966087, "as_of": "2026-05-11"}, {"ticker": "POET", "name": "POET Technologies", "country": "CA", "category": "Networking / Optical / Photonics", "price": 13.899999618530273, "currency": "USD", "d1": 26.940637996806636, "d7": 95.49928772869991, "d14": 74.84276669203001, "m1": 97.44317746944415, "m3": 123.83252066255946, "ytd": 119.58925412422717, "y1": 210.26784730695042, "y2": 523.3183632126337, "as_of": "2026-05-11"}, {"ticker": "AAOI", "name": "Applied Optoelectronics", "country": "US", "category": "Networking / Optical / Photonics", "price": 184.89999389648438, "currency": "USD", "d1": 24.14394445120609, "d7": 6.890969166007221, "d14": 26.83495365946125, "m1": 22.77555538038458, "m3": 285.93194423997033, "ytd": 430.4073168649886, "y1": 1160.3953165295095, "y2": 1709.197544671289, "as_of": "2026-05-11"}, {"ticker": "ANET", "name": "Arista Networks (data center switches)", "country": "US", "category": "Compute \u2014 AI Networking / Connectivity IC", "price": 136.42999267578125, "currency": "USD", "d1": -3.766672381850944, "d7": -20.96512771700506, "d14": -20.896392584124168, "m1": -7.410935171636779, "m3": -3.746304932688116, "ytd": 4.121189000070102, "y1": 57.68608179518991, "y2": 73.77956654601714, "as_of": "2026-05-11"}, {"ticker": "CIEN", "name": "Ciena Corp", "country": "US", "category": "Networking / Optical / Photonics", "price": 581.469970703125, "currency": "USD", "d1": 6.086367014489813, "d7": 7.977560334708977, "d14": 14.837851030653848, "m1": 17.227124628458835, "m3": 100.72838490917944, "ytd": 148.6295732001714, "y1": 677.9903496424831, "y2": 1084.256596279932, "as_of": "2026-05-11"}, {"ticker": "CSCO", "name": "Cisco Systems", "country": "US", "category": "Networking / Optical / Photonics", "price": 98.72000122070312, "currency": "USD", "d1": 2.2263658824409616, "d7": 6.574548362151056, "d14": 11.851346964990462, "m1": 20.068109650970523, "m3": 14.375354786996986, "ytd": 29.54180220435032, "y1": 68.96817192318242, "y2": 116.44868617868877, "as_of": "2026-05-11"}, {"ticker": "300308.SZ", "name": "Innolight", "country": "CN", "category": "Networking / Optical / Photonics", "price": 1017.989990234375, "currency": "CNY", "d1": 8.281831762328217, "d7": 18.71603384657434, "d14": 23.538750193228953, "m1": 38.731999149246164, "m3": 91.61037402211633, "ytd": 67.08109160227266, "y1": 953.0857238558395, "y2": 739.9219488759851, "as_of": "2026-05-12"}, {"ticker": "002281.SZ", "name": "Accelink Technologies", "country": "CN", "category": "Networking / Optical / Photonics", "price": 201.5, "currency": "CNY", "d1": 1.3632510716806934, "d7": 39.658997577503285, "d14": 47.080291970802925, "m1": 86.88555051968972, "m3": 188.14528688781692, "ytd": 188.06291464043247, "y1": 345.0591639846458, "y2": 498.32757852976295, "as_of": "2026-05-12"}, {"ticker": "FN", "name": "Fabrinet", "country": "US", "category": "Networking / Optical / Photonics", "price": 649.530029296875, "currency": "USD", "d1": 4.547063911256166, "d7": -9.511000230858812, "d14": -5.144865349366457, "m1": -1.9029458706024793, "m3": 29.41680653914902, "ytd": 42.66605847794853, "y1": 220.56561294516476, "y2": 191.62216214983073, "as_of": "2026-05-11"}, {"ticker": "SNPS", "name": "Synopsys", "country": "US", "category": "EDA & Chip Design Tools", "price": 516.1900024414062, "currency": "USD", "d1": -0.056145066277413225, "d7": 3.756784410332914, "d14": 3.540336501377106, "m1": 31.60055458214943, "m3": 17.609936117509008, "ytd": 9.89312805499818, "y1": 6.893768682063395, "y2": -7.27847854932998, "as_of": "2026-05-11"}, {"ticker": "CDNS", "name": "Cadence Design Systems", "country": "US", "category": "EDA & Chip Design Tools", "price": 364.20001220703125, "currency": "USD", "d1": 0.4135649157750221, "d7": 4.203027676162141, "d14": 8.2189347357841, "m1": 37.09252698432319, "m3": 25.15464337011384, "ytd": 16.51418128231046, "y1": 19.105243528338246, "y2": 26.68707328815003, "as_of": "2026-05-11"}, {"ticker": "300782.SZ", "name": "Maxscend Microelectronics", "country": "CN", "category": "China Domestic Chip Plays", "price": 109.9000015258789, "currency": "CNY", "d1": 2.3372773540330405, "d7": 10.319211499569626, "d14": 4.9765965832206716, "m1": 10.021025325251731, "m3": 46.2213892643583, "ytd": 34.879721401639955, "y1": 44.510186871502945, "y2": 22.239367731256255, "as_of": "2026-05-12"}, {"ticker": "603501.SS", "name": "Will Semiconductor", "country": "CN", "category": "China Domestic Chip Plays", "price": 103.30999755859375, "currency": "CNY", "d1": 1.9037288986617273, "d7": 5.096637183416997, "d14": -0.5582845648880452, "m1": 8.34819004914098, "m3": -11.919177464242702, "ytd": -17.942814689038546, "y1": -21.27341614837499, "y2": 0.6058245669770868, "as_of": "2026-05-12"}, {"ticker": "600703.SS", "name": "Sanan Optoelectronics", "country": "CN", "category": "China Domestic Chip Plays", "price": 16.719999313354492, "currency": "CNY", "d1": 4.239391265675585, "d7": 22.311625603790255, "d14": 19.513935574697516, "m1": 40.03350000802717, "m3": 5.622232431698415, "ytd": 18.329788945058702, "y1": 33.123738358348184, "y2": 34.189153681424834, "as_of": "2026-05-12"}, {"ticker": "603986.SS", "name": "GigaDevice (NOR/MCU)", "country": "CN", "category": "Memory \u2014 NOR Flash / Niche", "price": 353.54998779296875, "currency": "CNY", "d1": -2.369319574228679, "d7": 12.95888009971864, "d14": 14.975605786331304, "m1": 33.369796173796274, "m3": 24.231347672952875, "ytd": 65.01749721958868, "y1": 182.55210923099406, "y2": 329.8053106997635, "as_of": "2026-05-12"}, {"ticker": "688008.SS", "name": "Montage Technology", "country": "CN", "category": "China Domestic Chip Plays", "price": 240.6999969482422, "currency": "CNY", "d1": -3.4186679362527728, "d7": 38.892090426769755, "d14": 38.644085076911374, "m1": 67.70013167655746, "m3": 41.67157480587929, "ytd": 104.32936393260177, "y1": 208.4136259862941, "y2": 378.99111501097275, "as_of": "2026-05-12"}, {"ticker": "688256.SS", "name": "Cambricon Technologies", "country": "CN", "category": "China Domestic Chip Plays", "price": 1277.8699951171875, "currency": "CNY", "d1": 6.489166259765633, "d7": 12.138347701033991, "d14": 38.690948962107676, "m1": 57.45494606749229, "m3": 76.6898822645373, "ytd": 40.6297939978467, "y1": 182.2485927421828, "y2": 1018.987468284561, "as_of": "2026-05-12"}, {"ticker": "002475.SZ", "name": "Luxshare Precision", "country": "CN", "category": "Power/Compound Semi (SiC/GaN)", "price": 77.19000244140625, "currency": "CNY", "d1": 1.4856756758925505, "d7": 15.208958867770516, "d14": 10.460797760879604, "m1": 32.67446207720166, "m3": 51.382374691819145, "ytd": 36.54044084131476, "y1": 128.21603840861266, "y2": 165.89193405084012, "as_of": "2026-05-12"}, {"ticker": "6503.T", "name": "Mitsubishi Electric", "country": "JP", "category": "Power/Compound Semi (SiC/GaN)", "price": 6373.0, "currency": "JPY", "d1": -1.147820691794632, "d7": 4.97446878603196, "d14": 4.85357025337283, "m1": 9.63357990710476, "m3": 10.234595674569412, "ytd": 39.78275039042427, "y1": 125.76781861224768, "y2": 136.17148941128954, "as_of": "2026-05-12"}, {"ticker": "VRT", "name": "Vertiv Holdings (cooling/power)", "country": "US", "category": "Infrastructure / Data Center Adjacent", "price": 367.9200134277344, "currency": "USD", "d1": 8.22131720642214, "d7": 11.164157497885018, "d14": 14.108495420801482, "m1": 24.67216688362266, "m3": 82.18197006419736, "ytd": 127.15115015495581, "y1": 291.63815709864286, "y2": 286.6342472519944, "as_of": "2026-05-11"}, {"ticker": "ETN", "name": "Eaton Corp", "country": "US", "category": "Infrastructure / Data Center Adjacent", "price": 419.0, "currency": "USD", "d1": 4.356053350845346, "d7": -0.5402203911429204, "d14": 0.8128961399236578, "m1": 4.25754631425006, "m3": 11.777442123767745, "ytd": 32.324898882680976, "y1": 36.78719764017089, "y2": 29.938649668074113, "as_of": "2026-05-11"}, {"ticker": "ABBNY", "name": "ABB Ltd", "country": "CH", "category": "Infrastructure / Data Center Adjacent", "price": 107.75, "currency": "USD", "d1": 1.1737089201877993, "d7": 8.12844791780314, "d14": 8.838383838383844, "m1": 18.942492941609657, "m3": 22.10177470674799, "ytd": 47.81958129496704, "y1": 101.36674948225406, "y2": 114.2153810591119, "as_of": "2026-05-11"}, {"ticker": "SU.PA", "name": "Schneider Electric", "country": "FR", "category": "Infrastructure / Data Center Adjacent", "price": 270.45001220703125, "currency": "EUR", "d1": -1.529212373125377, "d7": 0.6345739104524295, "d14": 1.4335704475877398, "m1": 5.5657449806542525, "m3": 6.7348306502105215, "ytd": 16.935762828819346, "y1": 26.49417494297697, "y2": 21.27989956140912, "as_of": "2026-05-12"}, {"ticker": "MOD", "name": "Modine Manufacturing", "country": "US", "category": "Infrastructure / Data Center Adjacent", "price": 284.79998779296875, "currency": "USD", "d1": 4.322339850904311, "d7": 9.639658564047915, "d14": 16.268622715331915, "m1": 17.94913438003003, "m3": 29.968503375553524, "ytd": 113.31735413889672, "y1": 200.67565891323014, "y2": 176.1563030910774, "as_of": "2026-05-11"}, {"ticker": "SMCI", "name": "Super Micro Computer", "country": "US", "category": "Infrastructure / Data Center Adjacent", "price": 33.52000045776367, "currency": "USD", "d1": -5.230417104857155, "d7": 20.057307901745048, "d14": 20.35906642237082, "m1": 32.699921433244874, "m3": -0.029819033394584693, "ytd": 14.519986107047412, "y1": 4.782746788347447, "y2": -58.021288543133394, "as_of": "2026-05-11"}, {"ticker": "DELL", "name": "Dell Technologies", "country": "US", "category": "Infrastructure / Data Center Adjacent", "price": 247.0399932861328, "currency": "USD", "d1": -5.152422102900922, "d7": 16.726513890840543, "d14": 14.386253595321685, "m1": 39.372538277487656, "m3": 104.94942981316831, "ytd": 97.71884659050976, "y1": 161.49128083139624, "y2": 92.21079155284706, "as_of": "2026-05-11"}, {"ticker": "HPE", "name": "Hewlett Packard Enterprise", "country": "US", "category": "Infrastructure / Data Center Adjacent", "price": 30.8700008392334, "currency": "USD", "d1": -1.5310989996671465, "d7": 7.523517323722051, "d14": 7.861634989596555, "m1": 24.02571955092936, "m3": 29.94167515293753, "ytd": 29.34659664189587, "y1": 87.39461870531586, "y2": 90.68740690087284, "as_of": "2026-05-11"}, {"ticker": "SOXX", "name": "iShares Semiconductor ETF", "country": "US", "category": "Indices / ETFs (Benchmarks)", "price": 532.760009765625, "currency": "USD", "d1": 2.394776526040232, "d7": 15.301045877286912, "d14": 16.984696313545488, "m1": 37.806518715618886, "m3": 51.11495829888899, "ytd": 77.01751783384456, "y1": 176.45873024256105, "y2": 145.0472363040616, "as_of": "2026-05-11"}, {"ticker": "SMH", "name": "VanEck Semiconductor ETF", "country": "US", "category": "Indices / ETFs (Benchmarks)", "price": 576.3099975585938, "currency": "USD", "d1": 1.7245066385727315, "d7": 13.7177110522118, "d14": 13.836761040122191, "m1": 31.914940285074756, "m3": 41.72138355061614, "ytd": 60.02832025788214, "y1": 158.77496269867746, "y2": 160.03828035818296, "as_of": "2026-05-11"}, {"ticker": "SOXL", "name": "Direxion Semi Bull 3X", "country": "US", "category": "Indices / ETFs (Benchmarks)", "price": 190.4199981689453, "currency": "USD", "d1": 7.618399198340109, "d7": 49.29046931631655, "d14": 54.32368839522033, "m1": 149.2734647079327, "m3": 197.39185038141014, "ytd": 353.05734879712236, "y1": 1254.198602299352, "y2": 370.6166409913622, "as_of": "2026-05-11"}, {"ticker": "XSD", "name": "SPDR S&P Semiconductor ETF", "country": "US", "category": "Indices / ETFs (Benchmarks)", "price": 575.489990234375, "currency": "USD", "d1": 3.847196344388659, "d7": 15.953737193543716, "d14": 23.873177249932453, "m1": 55.17297107104382, "m3": 59.20462760524199, "ytd": 79.04579138344687, "y1": 173.88969384447174, "y2": 152.09485987411603, "as_of": "2026-05-11"}, {"ticker": "PSI", "name": "Invesco Dynamic Semis ETF", "country": "US", "category": "Indices / ETFs (Benchmarks)", "price": 156.16000366210938, "currency": "USD", "d1": 2.8857589392799143, "d7": 15.528597897093421, "d14": 19.461445994369477, "m1": 41.398044377045174, "m3": 56.91817252715854, "ytd": 98.02809788303225, "y1": 217.96797065427845, "y2": 179.05741213640874, "as_of": "2026-05-11"}, {"ticker": "STX", "name": "Seagate Technology (HDD)", "country": "US", "category": "Storage \u2014 HDD / Drives / Systems", "price": 834.010009765625, "currency": "USD", "d1": 6.563681150428136, "d7": 12.926860370278636, "d14": 39.96744709641007, "m1": 65.76431571793854, "m3": 96.57996760069251, "ytd": 203.37514456167258, "y1": 782.6238131871469, "y2": 824.9224989163514, "as_of": "2026-05-11"}, {"ticker": "NTAP", "name": "NetApp (storage systems)", "country": "US", "category": "Storage \u2014 HDD / Drives / Systems", "price": 117.7300033569336, "currency": "USD", "d1": -0.2288107144630569, "d7": 6.120426145757052, "d14": 8.56695011653752, "m1": 22.724906684464607, "m3": 14.132941803327913, "ytd": 11.037845142460757, "y1": 28.419000054759323, "y2": 12.742857397530628, "as_of": "2026-05-11"}], "failed": ["6488.TW", "6182.TW", "6967.T", "5347.TW", "AWE.L", "NPTN", "INFN", "ANSS"]};
+const COLS = [
+  {key:'ticker',   label:'Ticker',   left:true},
+  {key:'name',     label:'Name',     left:true},
+  {key:'country',  label:'Reg',      left:true},
+  {key:'price',    label:'Price',    fmt:'price'},
+  {key:'d1',       label:'1D',       fmt:'pct'},
+  {key:'d7',       label:'1W',       fmt:'pct'},
+  {key:'d14',      label:'2W',       fmt:'pct'},
+  {key:'m1',       label:'1M',       fmt:'pct'},
+  {key:'m3',       label:'3M',       fmt:'pct'},
+  {key:'ytd',      label:'YTD',      fmt:'pct'},
+  {key:'y1',       label:'1Y',       fmt:'pct'},
+  {key:'y2',       label:'2Y',       fmt:'pct'},
+];
+
+let state = { sortKey: 'd1', sortDir: -1, search: '', cat: '', region: '' };
+let hmState = { agg: 'median', sortKey: 'd1', sortDir: -1 };
+
+const TF_COLS = [
+  {key:'d1', label:'1D'},
+  {key:'d7', label:'1W'},
+  {key:'d14', label:'2W'},
+  {key:'m1', label:'1M'},
+  {key:'m3', label:'3M'},
+  {key:'ytd', label:'YTD'},
+  {key:'y1', label:'1Y'},
+  {key:'y2', label:'2Y'},
+];
+
+function median(arr) {
+  if (arr.length === 0) return null;
+  const s = [...arr].sort((a,b) => a-b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 === 0 ? (s[m-1] + s[m]) / 2 : s[m];
+}
+function mean(arr) {
+  if (arr.length === 0) return null;
+  return arr.reduce((a,b) => a+b, 0) / arr.length;
+}
+
+function aggregateByCategory(agg) {
+  const cats = {};
+  DATA.rows.forEach(r => {
+    if (!cats[r.category]) cats[r.category] = { name: r.category, n: 0 };
+    cats[r.category].n += 1;
+    TF_COLS.forEach(c => {
+      if (r[c.key] != null && !isNaN(r[c.key])) {
+        (cats[r.category][c.key] = cats[r.category][c.key] || []).push(r[c.key]);
+      }
+    });
+  });
+  // Compute aggregate
+  const fn = agg === 'mean' ? mean : median;
+  return Object.values(cats).map(c => {
+    const out = { name: c.name, n: c.n };
+    TF_COLS.forEach(col => { out[col.key] = c[col.key] ? fn(c[col.key]) : null; });
+    return out;
+  });
+}
+
+function catId(cat) {
+  return 'cat-' + cat.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function scrollToCategory(cat) {
+  const id = catId(cat);
+  const target = document.getElementById(id);
+  if (!target) return;
+  // Clear any prior highlights, add new one
+  document.querySelectorAll('.cat-block.highlight').forEach(el => el.classList.remove('highlight'));
+  target.classList.add('highlight');
+  target.scrollIntoView({behavior: 'smooth', block: 'start'});
+  // Auto-remove highlight after 2s
+  setTimeout(() => target.classList.remove('highlight'), 2400);
+}
+
+function renderHeatmap() {
+  const data = aggregateByCategory(hmState.agg);
+  // Sort
+  const k = hmState.sortKey, d = hmState.sortDir;
+  data.sort((a,b) => {
+    let va = a[k], vb = b[k];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return d * va.localeCompare(vb);
+    return d * (vb - va);
+  });
+
+  const el = document.getElementById('heatmap');
+  const arrow = (key) => hmState.sortKey === key ? (hmState.sortDir === -1 ? ' ▼' : ' ▲') : '';
+  let html = '<thead><tr>';
+  html += `<th class="left" data-k="name">Category${arrow('name')}</th>`;
+  html += `<th data-k="n">N${arrow('n')}</th>`;
+  TF_COLS.forEach(c => { html += `<th data-k="${c.key}">${c.label}${arrow(c.key)}</th>`; });
+  html += '</tr></thead><tbody>';
+  data.forEach(row => {
+    html += '<tr>';
+    html += `<td class="left"><span class="cat-name">${row.name}</span></td>`;
+    html += `<td style="color:var(--text-3); font-family:'JetBrains Mono',monospace; font-size:11px;">${row.n}</td>`;
+    TF_COLS.forEach(c => {
+      const v = row[c.key];
+      if (v == null) {
+        html += `<td class="hm-cell" style="color:var(--text-3);">—</td>`;
+      } else {
+        const sign = v > 0 ? '+' : '';
+        html += `<td class="hm-cell" style="${colorize(v)}">${sign}${v.toFixed(1)}%</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  el.innerHTML = html;
+
+  // Wire row clicks - jump to category in per-ticker table
+  el.querySelectorAll('tbody tr').forEach((tr, i) => {
+    const cat = data[i].name;
+    tr.addEventListener('click', () => scrollToCategory(cat));
+  });
+
+  // Wire sort headers
+  el.querySelectorAll('th[data-k]').forEach(th => {
+    th.onclick = (e) => {
+      e.stopPropagation();
+      const k = th.dataset.k;
+      if (hmState.sortKey === k) hmState.sortDir = -hmState.sortDir;
+      else { hmState.sortKey = k; hmState.sortDir = (k === 'name') ? 1 : -1; }
+      renderHeatmap();
+    };
+  });
+}
+
+function fmtPrice(v, cur) {
+  if (v == null) return '—';
+  const s = v >= 1000 ? v.toLocaleString(undefined,{maximumFractionDigits:0})
+          : v.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  return s + '<span class="cur">' + (cur || '') + '</span>';
+}
+
+function colorize(v) {
+  // Heatmap: caps at ±20% for the strongest tint
+  if (v == null || isNaN(v)) return '';
+  const cap = 20;
+  const t = Math.max(-1, Math.min(1, v / cap));
+  if (t > 0) {
+    const a = 0.06 + 0.32 * t;
+    return `background: rgba(74,222,128,${a.toFixed(3)}); color: var(--up);`;
+  } else if (t < 0) {
+    const a = 0.06 + 0.32 * (-t);
+    return `background: rgba(248,113,113,${a.toFixed(3)}); color: var(--down);`;
+  }
+  return 'color: var(--text-3);';
+}
+
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return '<span class="ret na">—</span>';
+  const sign = v > 0 ? '+' : '';
+  return `<span class="ret" style="${colorize(v)}">${sign}${v.toFixed(1)}%</span>`;
+}
+
+function topMovers() {
+  const rows = DATA.rows.filter(r => r.d1 != null);
+  if (rows.length === 0) return;
+  const by = (k, dir) => [...rows].sort((a,b) => (dir*(b[k]-a[k])))[0];
+  const best1d = by('d1', 1);
+  const worst1d = by('d1', -1);
+  const bestYTD = by('ytd', 1);
+  const bestY1 = by('y1', 1);
+  const slots = [
+    {lbl:'Top 1D', r:best1d, key:'d1'},
+    {lbl:'Worst 1D', r:worst1d, key:'d1'},
+    {lbl:'Top YTD', r:bestYTD, key:'ytd'},
+    {lbl:'Top 1Y', r:bestY1, key:'y1'},
+  ];
+  const html = slots.map(s => {
+    const v = s.r[s.key];
+    const pct = (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+    const c = v >= 0 ? 'var(--up)' : 'var(--down)';
+    return `<div class="mover">
+      <div class="lbl">${s.lbl}</div>
+      <div class="val"><span class="tkr">${s.r.ticker}</span><span class="pct" style="color:${c}">${pct}</span></div>
+      <div class="nm">${s.r.name}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('movers').innerHTML = html;
+}
+
+function populateCats() {
+  const cats = [...new Set(DATA.rows.map(r => r.category))];
+  const sel = document.getElementById('catFilter');
+  cats.forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o);
+  });
+}
+
+function filterRows() {
+  const s = state.search.toLowerCase();
+  return DATA.rows.filter(r => {
+    if (state.cat && r.category !== state.cat) return false;
+    if (state.region && r.country !== state.region) return false;
+    if (s) {
+      if (!(r.ticker.toLowerCase().includes(s) || r.name.toLowerCase().includes(s))) return false;
+    }
+    return true;
+  });
+}
+
+function sortGroup(rows) {
+  const k = state.sortKey, d = state.sortDir;
+  return [...rows].sort((a,b) => {
+    let va = a[k], vb = b[k];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return d * va.localeCompare(vb);
+    return d * (va - vb) * -1;  // sortDir -1 = descending for numbers
+  });
+}
+
+function render() {
+  const filtered = filterRows();
+  document.getElementById('count').textContent = `${filtered.length} of ${DATA.rows.length} tickers`;
+
+  // Group by category
+  const groups = {};
+  filtered.forEach(r => { (groups[r.category] = groups[r.category] || []).push(r); });
+  const catOrder = [...new Set(DATA.rows.map(r => r.category))]; // preserve original order
+  const wrap = document.getElementById('tableWrap');
+  wrap.innerHTML = '';
+
+  catOrder.forEach(cat => {
+    const rows = groups[cat];
+    if (!rows || rows.length === 0) return;
+    const block = document.createElement('div');
+    block.className = 'cat-block';
+    block.id = catId(cat);
+    block.innerHTML = `<h2 class="cat-title">${cat} <span class="cat-count">${rows.length}</span></h2>`;
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const tr = document.createElement('tr');
+    COLS.forEach(c => {
+      const th = document.createElement('th');
+      th.className = c.left ? 'left' : '';
+      const arrow = state.sortKey === c.key ? (state.sortDir === -1 ? '▼' : '▲') : '';
+      th.innerHTML = c.label + ' <span class="arrow">' + arrow + '</span>';
+      th.onclick = () => {
+        if (state.sortKey === c.key) state.sortDir = -state.sortDir;
+        else { state.sortKey = c.key; state.sortDir = -1; }
+        render();
+      };
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr); table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    sortGroup(rows).forEach(r => {
+      const trow = document.createElement('tr');
+      COLS.forEach(c => {
+        const td = document.createElement('td');
+        if (c.left) td.className = 'left';
+        let v = r[c.key];
+        if (c.key === 'ticker')      td.innerHTML = `<span class="tkr">${v}</span>`;
+        else if (c.key === 'name')   td.innerHTML = `<span class="nm">${v}</span>`;
+        else if (c.key === 'country')td.innerHTML = `<span class="ctry">${v}</span>`;
+        else if (c.fmt === 'price')  td.innerHTML = `<span class="px">${fmtPrice(v, r.currency)}</span>`;
+        else if (c.fmt === 'pct')    td.innerHTML = fmtPct(v);
+        else td.textContent = v ?? '—';
+        trow.appendChild(td);
+      });
+      tbody.appendChild(trow);
+    });
+    table.appendChild(tbody);
+    block.appendChild(table);
+    wrap.appendChild(block);
+  });
+}
+
+// --- wire up ---
+document.getElementById('search').addEventListener('input', e => { state.search = e.target.value; render(); });
+document.getElementById('catFilter').addEventListener('change', e => { state.cat = e.target.value; render(); });
+document.getElementById('regionFilter').addEventListener('change', e => { state.region = e.target.value; render(); });
+
+// Heatmap toggle (median / mean)
+document.querySelectorAll('.heatmap-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.heatmap-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    hmState.agg = btn.dataset.agg;
+    renderHeatmap();
+  });
+});
+
+populateCats();
+topMovers();
+renderHeatmap();
+render();
+</script>
+</body>
+</html>
